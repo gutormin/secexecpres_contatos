@@ -377,12 +377,12 @@
 
     .cc-info { flex:1; min-width:0; }
     .cc-nome {
-      font-size:15px; font-weight:800; color:var(--g900);
+      font-size:16px; font-weight:800; color:var(--g900);
       line-height:1.3; word-break:break-word;
       white-space:normal; overflow:visible;
-      margin-bottom:3px;
+      margin-bottom:4px;
     }
-    .cc-sub { font-size:12px; color:var(--g500); }
+    .cc-sub { font-size:13px; color:var(--g500); font-weight:500; }
 
     .cc-badge {
       padding:4px 10px; border-radius:20px;
@@ -393,15 +393,26 @@
     .cc.tipo-ext .cc-badge { background:var(--ext-l); color:var(--ext); }
 
     .cc-details {
-      display:flex; flex-direction:column; gap:6px;
+      display:flex; flex-direction:column; gap:10px;
       padding-top:14px; border-top:1px solid var(--g100);
     }
     .cc-det {
-      display:flex; align-items:center; gap:9px;
-      font-size:12.5px; color:var(--g600);
+      display:flex; align-items:center; gap:10px;
+      font-size:13.5px; color:var(--g700);
     }
-    .cc-det i { width:16px; color:var(--g400); font-size:12px; flex-shrink:0; }
-    .cc-det span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cc-det i { width:18px; font-size:13px; flex-shrink:0; }
+    .cc-det span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+    .cc-det-label {
+      font-size:10px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; color:var(--g400); display:block; margin-bottom:1px;
+    }
+    .cc-det-val { font-size:13.5px; color:var(--g800); font-weight:600; }
+    .cc-codigo-badge {
+      display:inline-flex; align-items:center; gap:5px;
+      background:var(--g100); border:1px solid var(--g200);
+      border-radius:6px; padding:4px 10px;
+      font-size:13px; font-weight:700; color:var(--g700);
+    }
 
     .cc-foot {
       padding:12px 20px; border-top:1px solid var(--g100);
@@ -1186,10 +1197,49 @@ function criarCard(c) {
   const tc     = isCom ? "com" : "ext";
   const label  = isCom ? "Com/Dilig." : "Externo";
   const titulo = isCom ? (c.unidade || "-") : (c.nome || "-");
-  const sub    = isCom ? (c.diretor || c.encaminhar || "") : (c.cargo || c.orgao || "");
   const emails = (c.emails||[]).filter(Boolean);
   const tels   = (c.telefones||[]).filter(t=>t?.numero);
   const inicial= titulo.charAt(0).toUpperCase();
+
+  let detalhes = "";
+  if (isCom) {
+    if (c.codigo) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-hashtag" style="color:var(--com)"></i>
+        <div><span class="cc-det-label">Código</span><span class="cc-det-val">${c.codigo}</span></div>
+      </div>`;
+    if (c.diretor) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-user-tie" style="color:var(--com)"></i>
+        <div><span class="cc-det-label">Diretor / Endereçar Para</span><span class="cc-det-val">${c.diretor}</span></div>
+      </div>`;
+    if (c.encaminhar) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-share" style="color:var(--com)"></i>
+        <div><span class="cc-det-label">Encaminhar Para</span><span class="cc-det-val">${c.encaminhar}</span></div>
+      </div>`;
+  } else {
+    if (c.cargo) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-id-badge" style="color:var(--ext)"></i>
+        <div><span class="cc-det-label">Cargo / Função</span><span class="cc-det-val">${c.cargo}</span></div>
+      </div>`;
+    if (c.orgao) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-building" style="color:var(--ext)"></i>
+        <div><span class="cc-det-label">Órgão</span><span class="cc-det-val">${c.orgao}</span></div>
+      </div>`;
+  }
+  if (emails[0]) detalhes += `
+    <div class="cc-det">
+      <i class="fas fa-envelope" style="color:var(--g400)"></i>
+      <div><span class="cc-det-label">E-mail</span><span class="cc-det-val">${emails[0]}</span></div>
+    </div>`;
+  if (tels[0]) detalhes += `
+    <div class="cc-det">
+      <i class="fas fa-phone" style="color:var(--g400)"></i>
+      <div><span class="cc-det-label">Telefone (${tels[0].tipo})</span><span class="cc-det-val">${tels[0].numero}</span></div>
+    </div>`;
 
   return `
   <div class="cc tipo-${tc}" onclick="verContato('${c.id}')">
@@ -1199,22 +1249,15 @@ function criarCard(c) {
         <div class="cc-av">${inicial}</div>
         <div class="cc-info">
           <div class="cc-nome">${titulo}</div>
-          ${sub ? `<div class="cc-sub">${sub}</div>` : ""}
         </div>
         <span class="cc-badge">${label}</span>
       </div>
-      <div class="cc-details">
-        ${isCom && c.codigo    ? `<div class="cc-det"><i class="fas fa-hashtag"></i><span>Código: ${c.codigo}</span></div>` : ""}
-        ${isCom && c.encaminhar? `<div class="cc-det"><i class="fas fa-share"></i><span>${c.encaminhar}</span></div>` : ""}
-        ${!isCom && c.orgao    ? `<div class="cc-det"><i class="fas fa-building"></i><span>${c.orgao}</span></div>` : ""}
-        ${emails[0]            ? `<div class="cc-det"><i class="fas fa-envelope"></i><span>${emails[0]}</span></div>` : ""}
-        ${tels[0]              ? `<div class="cc-det"><i class="fas fa-phone"></i><span>${tels[0].numero}</span></div>` : ""}
-      </div>
+      <div class="cc-details">${detalhes || "<span style='color:var(--g400);font-size:13px'>Sem informações adicionais</span>"}</div>
     </div>
     <div class="cc-foot" onclick="event.stopPropagation()">
       <button class="cc-btn view" onclick="verContato('${c.id}')"><i class="fas fa-eye"></i> Ver</button>
       <button class="cc-btn edit" onclick="editarContato('${c.id}')"><i class="fas fa-pen"></i> Editar</button>
-      <button class="cc-btn del"  onclick="confirmarExcluir('${c.id}','${(titulo).replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
+      <button class="cc-btn del" onclick="confirmarExcluir('${c.id}','${(titulo).replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
     </div>
   </div>`;
 }
