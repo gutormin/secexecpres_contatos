@@ -783,11 +783,15 @@
       <i class="fas fa-phone-volume"></i><span>Tel. Úteis</span>
     </button>
     <div class="topbar-divider"></div>
-    <button class="topbar-btn topbar-btn-new com" id="btn-nav-cad-com" onclick="irParaCadastro('COMUNICACAO')">
+    <button class="topbar-btn topbar-btn-new com admin-only hidden" id="btn-nav-cad-com" onclick="irParaCadastro('COMUNICACAO')">
       <i class="fas fa-plus"></i><span>Nova Com/Dilig.</span>
     </button>
-    <button class="topbar-btn topbar-btn-new ext" id="btn-nav-cad-ext" onclick="irParaCadastro('EXTERNO')">
+    <button class="topbar-btn topbar-btn-new ext admin-only hidden" id="btn-nav-cad-ext" onclick="irParaCadastro('EXTERNO')">
       <i class="fas fa-plus"></i><span>Novo Externo</span>
+    </button>
+    <div class="topbar-divider"></div>
+    <button class="topbar-btn" id="btn-admin-acesso" onclick="abrirModalAdmin()">
+      <i class="fas fa-lock"></i><span>Acesso Admin</span>
     </button>
   </div>
 </nav>
@@ -1048,7 +1052,7 @@
         </div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <button class="btn-pri" style="background:var(--green)" onclick="abrirModalTelefone()">
+        <button class="btn-pri admin-only hidden" style="background:var(--green)" onclick="abrirModalTelefone()">
           <i class="fas fa-plus"></i> Novo Contato
         </button>
         <button class="btn-sec" onclick="sincronizarTelefones()" title="Reimportar contatos dos cadastros">
@@ -1143,7 +1147,31 @@
     <div class="modal-body" id="ver-body"></div>
     <div class="modal-foot">
       <button class="btn-sec" onclick="fecharModal('modal-ver')"><i class="fas fa-times"></i> Fechar</button>
-      <button class="btn-pri" id="btn-editar-ver"><i class="fas fa-pen"></i> Editar</button>
+      <button class="btn-sec admin-only hidden" id="btn-duplicar-ver"><i class="fas fa-clone"></i> Duplicar</button>
+      <button class="btn-pri admin-only hidden" id="btn-editar-ver"><i class="fas fa-pen"></i> Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ACESSO ADMINISTRADOR -->
+<div id="modal-admin" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:380px">
+    <div class="ver-stripe" style="background:linear-gradient(90deg,var(--primary),#60A5FA)"></div>
+    <div class="modal-head">
+      <h3><i class="fas fa-lock"></i> Acesso Administrador</h3>
+      <button class="modal-close" onclick="fecharModal('modal-admin')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="fgroup">
+        <label>Senha</label>
+        <input type="password" id="admin-senha-inp" placeholder="Digite a senha de administrador"
+          onkeydown="if(event.key==='Enter') fazerLoginAdmin()"/>
+        <span class="field-err" id="err-admin-senha"></span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="fecharModal('modal-admin')"><i class="fas fa-times"></i> Cancelar</button>
+      <button class="btn-pri" onclick="fazerLoginAdmin()"><i class="fas fa-right-to-bracket"></i> Entrar</button>
     </div>
   </div>
 </div>
@@ -1196,6 +1224,13 @@ const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
 /* ══════════════════════════
+   ACESSO ADMINISTRADOR
+   (proteção apenas de interface — troque a senha abaixo quando quiser)
+══════════════════════════ */
+const ADMIN_SENHA = "SecExec@2026";
+let isAdmin = sessionStorage.getItem("secexec_admin") === "1";
+
+/* ══════════════════════════
    ESTADO GLOBAL
 ══════════════════════════ */
 let todosContatos     = [];
@@ -1203,6 +1238,7 @@ let contatosFiltrados = [];
 let filtroTipoAtual   = "";
 let paginaAtual       = 1;
 let contatoEditandoId = null;
+let textosDuplicados  = null;   // guarda txtComunicacao/txtDiligencia ao duplicar um card
 const POR_PAGINA      = 12;
 
 /* ══════════════════════════
@@ -1222,6 +1258,51 @@ function mostrarLoading(v) {
 }
 
 /* ══════════════════════════
+   ACESSO ADMINISTRADOR
+══════════════════════════ */
+window.abrirModalAdmin = () => {
+  if (isAdmin) {
+    // já logado: botão vira "sair"
+    isAdmin = false;
+    sessionStorage.removeItem("secexec_admin");
+    applyAdminUI();
+    toast("ok", "Modo administrador encerrado.");
+    return;
+  }
+  document.getElementById("admin-senha-inp").value = "";
+  document.getElementById("err-admin-senha").textContent = "";
+  abrirModal("modal-admin");
+  setTimeout(() => document.getElementById("admin-senha-inp")?.focus(), 100);
+};
+
+window.fazerLoginAdmin = () => {
+  const senha = document.getElementById("admin-senha-inp").value;
+  if (senha !== ADMIN_SENHA) {
+    document.getElementById("err-admin-senha").textContent = "Senha incorreta.";
+    return;
+  }
+  isAdmin = true;
+  sessionStorage.setItem("secexec_admin", "1");
+  fecharModal("modal-admin");
+  applyAdminUI();
+  toast("ok", "Acesso administrador liberado.");
+};
+
+function applyAdminUI() {
+  document.querySelectorAll(".admin-only").forEach(el => el.classList.toggle("hidden", !isAdmin));
+  const btnAdmin = document.getElementById("btn-admin-acesso");
+  if (btnAdmin) {
+    btnAdmin.innerHTML = isAdmin
+      ? '<i class="fas fa-lock-open"></i><span>Sair do Admin</span>'
+      : '<i class="fas fa-lock"></i><span>Acesso Admin</span>';
+    btnAdmin.classList.toggle("ativo", isAdmin);
+  }
+  // reaplica renders para refletir botões editar/excluir nos cards já carregados
+  if (typeof renderizarContatos === "function") renderizarContatos();
+  if (typeof renderTelGrid === "function") renderTelGrid();
+}
+
+/* ══════════════════════════
    NAVEGAÇÃO
 ══════════════════════════ */
 window.irPara = (tela) => {
@@ -1236,7 +1317,9 @@ window.irPara = (tela) => {
 };
 
 window.irParaCadastro = (tipo) => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   contatoEditandoId = null;
+  textosDuplicados  = null;
   limparFormulario();
   setTipo(tipo);
   document.getElementById("cad-titulo").textContent    = tipo === "COMUNICACAO" ? "Nova Comunicação / Diligência" : "Novo Contato Externo";
@@ -1319,6 +1402,7 @@ window.limparFormulario = () => {
     <select class="tel-tipo"><option value="celular">Celular</option><option value="fixo">Fixo</option><option value="ramal">Ramal</option></select>
     <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button></div>`;
   document.getElementById("c-id").value = "";
+  textosDuplicados = null;
   // contatoEditandoId é zerado apenas pelo fluxo de salvar/cancelar, não aqui
 };
 
@@ -1326,6 +1410,7 @@ window.limparFormulario = () => {
    SALVAR
 ══════════════════════════ */
 window.salvarContato = async () => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   const tipo = document.getElementById("c-tipo").value;
   ["err-c-codigo","err-c-unidade","err-c-nome","err-c-orgao"].forEach(id => {
     const el = document.getElementById(id); if (el) el.textContent = "";
@@ -1372,6 +1457,12 @@ window.salvarContato = async () => {
       contatoEditandoId = null;
     } else {
       dados.criadoEm = serverTimestamp();
+      if (textosDuplicados) {
+        // veio de uma duplicação: leva junto os textos de comunicação/diligência já digitados
+        dados.txtComunicacao = textosDuplicados.txtComunicacao;
+        dados.txtDiligencia  = textosDuplicados.txtDiligencia;
+        textosDuplicados = null;
+      }
       await addDoc(collection(db,"contatos"), dados);
       toast("ok", "Cadastro realizado com sucesso!");
     }
@@ -1551,8 +1642,8 @@ function criarCard(c) {
     </div>
     <div class="cc-foot" onclick="event.stopPropagation()">
       <button class="cc-btn view" onclick="verContato('${c.id}')"><i class="fas fa-eye"></i> Ver</button>
-      <button class="cc-btn edit" onclick="editarContato('${c.id}')"><i class="fas fa-pen"></i> Editar</button>
-      <button class="cc-btn del" onclick="confirmarExcluir('${c.id}','${(titulo).replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
+      ${isAdmin ? `<button class="cc-btn edit" onclick="editarContato('${c.id}')"><i class="fas fa-pen"></i> Editar</button>
+      <button class="cc-btn del" onclick="confirmarExcluir('${c.id}','${(titulo).replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>` : ""}
     </div>
   </div>`;
 }
@@ -1667,15 +1758,15 @@ window.verContato = (id) => {
             <i class="fas fa-file-lines"></i> Texto da Comunicação
           </span>
           <div style="display:flex;gap:6px">
-            <button class="btn-txt-save" onclick="salvarTexto('${c.id}','com')" title="Salvar">
+            ${isAdmin ? `<button class="btn-txt-save" onclick="salvarTexto('${c.id}','com')" title="Salvar">
               <i class="fas fa-floppy-disk"></i> Salvar
-            </button>
+            </button>` : ""}
             <button class="btn-txt-copy com" onclick="copiarAreaTexto('txt-comunicacao',this)">
               <i class="fas fa-copy"></i> Copiar
             </button>
           </div>
         </div>
-        <textarea id="txt-comunicacao" style="width:100%;min-height:180px;padding:12px 14px;border:1.5px solid var(--com-m);border-radius:10px;font-size:13px;font-family:var(--font);color:var(--g900);background:var(--com-l);line-height:1.7;resize:vertical;outline:none;transition:border-color .2s" placeholder="Digite o texto da comunicação...">${c.txtComunicacao || (isCom ? placeholderCom : "")}</textarea>
+        <textarea id="txt-comunicacao" ${isAdmin ? "" : "readonly"} style="width:100%;min-height:180px;padding:12px 14px;border:1.5px solid var(--com-m);border-radius:10px;font-size:13px;font-family:var(--font);color:var(--g900);background:${isAdmin?"var(--com-l)":"var(--g100)"};line-height:1.7;resize:vertical;outline:none;transition:border-color .2s;${isAdmin?"":"cursor:default"}" placeholder="Digite o texto da comunicação...">${c.txtComunicacao || (isCom ? placeholderCom : "")}</textarea>
       </div>
 
       <!-- DILIGÊNCIA -->
@@ -1685,15 +1776,15 @@ window.verContato = (id) => {
             <i class="fas fa-gavel"></i> Texto da Diligência
           </span>
           <div style="display:flex;gap:6px">
-            <button class="btn-txt-save" onclick="salvarTexto('${c.id}','dilig')" title="Salvar">
+            ${isAdmin ? `<button class="btn-txt-save" onclick="salvarTexto('${c.id}','dilig')" title="Salvar">
               <i class="fas fa-floppy-disk"></i> Salvar
-            </button>
+            </button>` : ""}
             <button class="btn-txt-copy dilig" onclick="copiarAreaTexto('txt-diligencia',this)">
               <i class="fas fa-copy"></i> Copiar
             </button>
           </div>
         </div>
-        <textarea id="txt-diligencia" style="width:100%;min-height:180px;padding:12px 14px;border:1.5px solid var(--ext-m);border-radius:10px;font-size:13px;font-family:var(--font);color:var(--g900);background:var(--ext-l);line-height:1.7;resize:vertical;outline:none;transition:border-color .2s" placeholder="Digite o texto da diligência...">${c.txtDiligencia || ""}</textarea>
+        <textarea id="txt-diligencia" ${isAdmin ? "" : "readonly"} style="width:100%;min-height:180px;padding:12px 14px;border:1.5px solid var(--ext-m);border-radius:10px;font-size:13px;font-family:var(--font);color:var(--g900);background:${isAdmin?"var(--ext-l)":"var(--g100)"};line-height:1.7;resize:vertical;outline:none;transition:border-color .2s;${isAdmin?"":"cursor:default"}" placeholder="Digite o texto da diligência...">${c.txtDiligencia || ""}</textarea>
       </div>
 
     </div>
@@ -1702,6 +1793,9 @@ window.verContato = (id) => {
   document.getElementById("btn-editar-ver").onclick = () => {
     fecharModal("modal-ver"); editarContato(id);
   };
+  document.getElementById("btn-duplicar-ver").onclick = () => {
+    fecharModal("modal-ver"); duplicarContato(id);
+  };
   abrirModal("modal-ver");
 };
 
@@ -1709,11 +1803,13 @@ window.verContato = (id) => {
    EDITAR
 ══════════════════════════ */
 window.editarContato = (id) => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   const c = todosContatos.find(x => x.id === id);
   if (!c) return;
   const tipo = c.tipo === "INTERNO" ? "COMUNICACAO" : c.tipo;
 
   contatoEditandoId = id;   // ← definido ANTES de limparFormulario para não ser zerado
+  textosDuplicados  = null;
   limparFormulario();
   contatoEditandoId = id;   // ← restaurado após limparFormulario (que o zeraria)
   setTipo(tipo);
@@ -1742,6 +1838,50 @@ window.editarContato = (id) => {
   irPara("cadastro");
 };
 
+/* ══════════════════════════
+   DUPLICAR
+══════════════════════════ */
+window.duplicarContato = (id) => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
+  const c = todosContatos.find(x => x.id === id);
+  if (!c) return;
+  const tipo = c.tipo === "INTERNO" ? "COMUNICACAO" : c.tipo;
+
+  contatoEditandoId = null;   // ← garante que vai CRIAR um novo cadastro, não sobrescrever o original
+  limparFormulario();
+  setTipo(tipo);
+
+  document.getElementById("cad-titulo").textContent    = "Duplicar Cadastro";
+  document.getElementById("cad-subtitulo").textContent = "Revise os campos e salve para criar um novo cadastro com base neste";
+
+  if (tipo === "COMUNICACAO") {
+    document.getElementById("c-codigo").value     = c.codigo     || "";
+    document.getElementById("c-unidade").value    = c.unidade    || "";
+    document.getElementById("c-diretor").value    = c.diretor    || "";
+    document.getElementById("c-encaminhar").value = c.encaminhar || "";
+    document.getElementById("c-obs-com").value    = c.obs        || "";
+    preencherDynFields("emails-container",    c.emails||[],    false);
+    preencherDynFields("telefones-container", c.telefones||[], true, "fixo");
+  } else {
+    document.getElementById("c-nome").value        = c.nome        || "";
+    document.getElementById("c-cargo").value       = c.cargo       || "";
+    document.getElementById("c-orgao").value       = c.orgao       || "";
+    document.getElementById("c-departamento").value= c.departamento|| "";
+    document.getElementById("c-obs").value         = c.obs         || "";
+    preencherDynFields("emails-container-ext",    c.emails||[],    false);
+    preencherDynFields("telefones-container-ext", c.telefones||[], true, "celular");
+  }
+
+  // guarda os textos (comunicação/diligência) já digitados para irem junto no novo cadastro
+  textosDuplicados = {
+    txtComunicacao: c.txtComunicacao || "",
+    txtDiligencia:  c.txtDiligencia  || ""
+  };
+
+  toast("ok","Dados copiados (incluindo os textos). Ajuste o que precisar e salve para criar um novo cadastro.");
+  irPara("cadastro");
+};
+
 function preencherDynFields(containerId, itens, isTel, tipoDefault) {
   const el = document.getElementById(containerId);
   el.innerHTML = "";
@@ -1767,6 +1907,7 @@ function preencherDynFields(containerId, itens, isTel, tipoDefault) {
    EXCLUIR
 ══════════════════════════ */
 window.confirmarExcluir = (id, nome) => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   document.getElementById("confirmar-msg").textContent = `Deseja excluir permanentemente "${nome}"?`;
   document.getElementById("btn-confirmar").onclick = async () => {
     mostrarLoading(true);
@@ -1817,6 +1958,7 @@ window.copiarAreaTexto = async (id, btn) => {
 };
 
 window.salvarTexto = async (id, tipo) => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   const campo = tipo === "com" ? "txtComunicacao" : "txtDiligencia";
   const elId  = tipo === "com" ? "txt-comunicacao" : "txt-diligencia";
   const valor = document.getElementById(elId)?.value || "";
@@ -2058,6 +2200,7 @@ function renderTelGrid() {
     const btnExcluir = isMan
       ? `<button class="tc-btn del" onclick="excluirTelefone('${t.id}','${t.nome.replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i> Excluir</button>`
       : `<span style="font-size:11px;color:var(--g400);padding:7px 0;flex:1;text-align:center">Editável no cadastro</span>`;
+    const rodapeSomenteLeitura = `<span style="font-size:11px;color:var(--g400);padding:7px 0;flex:1;text-align:center">Somente visualização</span>`;
 
     return `<div class="tc origem-${t._origem}">
       <div class="tc-stripe"></div>
@@ -2075,8 +2218,7 @@ function renderTelGrid() {
         </div>
       </div>
       <div class="tc-foot">
-        ${isMan ? btnEditar : ""}
-        ${btnExcluir}
+        ${isAdmin ? `${isMan ? btnEditar : ""}${btnExcluir}` : rodapeSomenteLeitura}
       </div>
     </div>`;
   }).join("");
@@ -2084,6 +2226,7 @@ function renderTelGrid() {
 
 // ── Modal novo/editar ─────────────────────
 window.abrirModalTelefone = () => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   telEditandoId = null;
   ["tf-nome","tf-unidade","tf-fixo","tf-celular","tf-email"].forEach(id => {
     const el = document.getElementById(id); if(el) el.value="";
@@ -2095,6 +2238,7 @@ window.abrirModalTelefone = () => {
 };
 
 window.editarTelefone = (id) => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   const t = todosTelefones.find(x => x.id===id);
   if (!t) return;
   if (t._origem !== "man") { toast("aviso","Para editar este contato, acesse o cadastro original."); return; }
@@ -2111,6 +2255,7 @@ window.editarTelefone = (id) => {
 };
 
 window.salvarTelefone = async () => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   const nome = document.getElementById("tf-nome").value.trim();
   if (!nome) { document.getElementById("err-tf-nome").textContent="Nome obrigatório."; return; }
   document.getElementById("err-tf-nome").textContent="";
@@ -2140,6 +2285,7 @@ window.salvarTelefone = async () => {
 };
 
 window.excluirTelefone = (id, nome) => {
+  if (!isAdmin) { abrirModalAdmin(); return; }
   document.getElementById("confirmar-msg").textContent = `Deseja excluir "${nome}" dos telefones úteis?`;
   document.getElementById("btn-confirmar").onclick = async () => {
     mostrarLoading(true);
@@ -2154,5 +2300,10 @@ window.excluirTelefone = (id, nome) => {
   };
   abrirModal("modal-confirmar");
 };
+
+/* ══════════════════════════
+   INICIALIZAÇÃO DO MODO ADMIN
+══════════════════════════ */
+applyAdminUI();
 
 </script>
