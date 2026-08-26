@@ -853,29 +853,32 @@
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
-<div id="login-page">
-  <div class="login-card">
-    <div class="login-ico"><i class="fas fa-lock"></i></div>
-    <h2>SecExecPres</h2>
-    <p>Acesse o Gestor de Contatos</p>
-    <form class="login-form" onsubmit="loginUser(event)">
-      <div class="fgroup" style="margin-bottom: 16px;">
-        <label for="login-email">E-mail</label>
-        <input type="email" id="login-email" required placeholder="seu.email@tjgo.jus.br" />
-      </div>
-      <div class="fgroup" style="margin-bottom: 24px;">
-        <label for="login-password">Senha</label>
-        <input type="password" id="login-password" required placeholder="Digite sua senha" />
-      </div>
-      <button type="submit" class="btn-login" id="btn-login-submit">Entrar</button>
-    </form>
-    <div id="db-status">Aguardando login...</div>
+<!-- MODAL: LOGIN ADM -->
+<div id="modal-login-adm" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width: 400px; height: auto;">
+    <div class="modal-head">
+      <h3><i class="fas fa-shield-halved"></i> Login de Administrador</h3>
+      <button class="modal-close" onclick="fecharModal('modal-login-adm')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form class="login-form" onsubmit="loginUser(event)">
+        <div class="fgroup" style="margin-bottom: 16px;">
+          <label for="login-email">E-mail</label>
+          <input type="email" id="login-email" required placeholder="seu.email@tjgo.jus.br" />
+        </div>
+        <div class="fgroup" style="margin-bottom: 24px;">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" required placeholder="Digite sua senha" />
+        </div>
+        <button type="submit" class="btn-login" id="btn-login-submit" style="width:100%; padding:11px; background:var(--primary); color:white; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; font-family:var(--font); cursor:pointer;">Entrar como ADM</button>
+      </form>
+      <div id="db-status" style="margin-top:12px; font-size:12px; color:var(--g500); text-align:center;">Aguardando login...</div>
+    </div>
   </div>
 </div>
 
 <!-- APP SHELL -->
-<div id="app-shell" class="hidden">
+<div id="app-shell">
 
   <!-- TOPBAR -->
   <nav class="topbar">
@@ -907,13 +910,16 @@
         <i class="fas fa-plus"></i><span>Novo Externo</span>
       </button>
       <div class="topbar-divider"></div>
-      <div class="topbar-user" onclick="abrirModalAlterarSenha()">
-        <img id="user-display-avatar" class="user-av" src="" alt="Avatar">
+      <div class="topbar-user" onclick="if(checkPermission('admin')) abrirModalAlterarSenha();">
+        <img id="user-display-avatar" class="user-av" src="https://ui-avatars.com/api/?name=Visitante&background=64748B&color=fff&bold=true" alt="Avatar">
         <div class="user-info">
-          <span id="user-display-name">Carregando...</span>
-          <span id="user-display-role">...</span>
+          <span id="user-display-name">Visitante</span>
+          <span id="user-display-role">Público</span>
         </div>
-        <button class="topbar-btn logout-btn" onclick="event.stopPropagation(); logoutUser()" title="Sair do Sistema">
+        <button class="topbar-btn" id="btn-login-adm" onclick="event.stopPropagation(); abrirModal('modal-login-adm')" title="Entrar no Modo Administrador" style="background:var(--primary); color:white; font-size:12px; font-weight:700; border-radius:6px; padding:6px 12px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+          <i class="fas fa-key"></i> <span>Entrar ADM</span>
+        </button>
+        <button class="topbar-btn logout-btn hidden" id="btn-logout-adm" onclick="event.stopPropagation(); logoutUser()" title="Sair do Modo Admin">
           <i class="fas fa-right-from-bracket"></i>
         </button>
       </div>
@@ -1540,20 +1546,22 @@ onAuthStateChanged(auth, async (user) => {
       
       // Check admin panel
       const isAdmin = currentUserRole.toUpperCase() === "ADMIN";
-      document.getElementById("btn-nav-backup-audit").classList.toggle("hidden", !isAdmin);
+      document.getElementById("btn-nav-backup-audit")?.classList.toggle("hidden", !isAdmin);
       
-      // Display interface
-      document.getElementById("login-page").classList.add("hidden");
-      document.getElementById("app-shell").classList.remove("hidden");
+      // Toggle topbar buttons
+      document.getElementById("btn-login-adm")?.classList.add("hidden");
+      document.getElementById("btn-logout-adm")?.classList.remove("hidden");
       
+      fecharModal("modal-login-adm");
       atualizarInterfacePermissoes();
       
       await logAction("Login", `Usuário ${user.email} acessou o sistema.`);
-      irPara("inicio");
       
       if (isAdmin) {
         carregarAuditoria();
       }
+      if (todosContatos.length) filtrarContatos();
+      if (todosTelefones.length) filtrarTelefones();
     } catch (e) {
       console.error("Erro ao autenticar usuário:", e);
       toast("erro", "Erro de autenticação: " + e.message);
@@ -1564,9 +1572,21 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     currentUserData = null;
     currentUserRole = "VISUALIZADOR";
-    document.getElementById("app-shell").classList.add("hidden");
-    document.getElementById("login-page").classList.remove("hidden");
-    document.getElementById("db-status").textContent = "Aguardando login...";
+    document.getElementById("app-shell")?.classList.remove("hidden");
+    const elLoginModal = document.getElementById("modal-login-adm");
+    if (elLoginModal) elLoginModal.classList.add("hidden");
+    
+    document.getElementById("user-display-name").textContent = "Visitante";
+    document.getElementById("user-display-role").textContent = "Público";
+    document.getElementById("user-display-avatar").src = `https://ui-avatars.com/api/?name=Visitante&background=64748B&color=fff&bold=true`;
+    
+    document.getElementById("btn-login-adm")?.classList.remove("hidden");
+    document.getElementById("btn-logout-adm")?.classList.add("hidden");
+    document.getElementById("btn-nav-backup-audit")?.classList.add("hidden");
+    
+    atualizarInterfacePermissoes();
+    carregarContatos();
+    carregarTelefones();
   }
 });
 
@@ -1588,7 +1608,8 @@ window.loginUser = async (event) => {
   
   try {
     await signInWithEmailAndPassword(auth, email, pass);
-    toast("ok", "Login efetuado!");
+    toast("ok", "Login ADM efetuado!");
+    fecharModal("modal-login-adm");
   } catch (err) {
     console.error(err);
     let msg = "Erro ao fazer login.";
