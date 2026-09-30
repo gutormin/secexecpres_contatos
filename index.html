@@ -169,6 +169,14 @@
     
     #toast { position:fixed; bottom:24px; right:24px; background:var(--g900); color:white; padding:12px 24px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; z-index:2000; transform:translateY(100px); opacity:0; transition:all .3s ease; }
     #toast.show { transform:translateY(0); opacity:1; }
+
+    /* PANEL EXPORTAR / IMPORTAR DADOS DO GITHUB */
+    .github-sync-box {
+      background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-sm);
+      padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    .github-sync-text { font-size: 13px; color: #1E40AF; }
+    .github-sync-text strong { display: block; font-size: 14px; color: #1E3A8A; }
   </style>
 </head>
 <body>
@@ -272,6 +280,15 @@
             </div>
           </div>
           <button class="btn-pri adm-only" onclick="navegarPara('tela-cad-endereco')"><i class="fa-solid fa-plus"></i> Novo Endereçamento</button>
+        </div>
+
+        <!-- PAINEL ADM PARA EXPORTAR DADOS ATUALIZADOS DO CÓDIGO -->
+        <div class="github-sync-box adm-only">
+          <div class="github-sync-text">
+            <strong><i class="fa-solid fa-code-commit"></i> Gerenciador de Lista Pública (GitHub)</strong>
+            <span>Copie o arquivo de dados dos cadastros efetuados para atualizar a lista pública global no repositório.</span>
+          </div>
+          <button class="btn-sec" onclick="exportarDadosParaCodigo()"><i class="fa-solid fa-download"></i> Baixar Dados Atualizados (JSON)</button>
         </div>
 
         <div class="toolbar-box">
@@ -406,19 +423,19 @@
     }
 
     function atualizarControleAcesso() {
-      const btnNovo = document.querySelector('.adm-only');
+      const btnsAdm = document.querySelectorAll('.adm-only');
       const badgeRole = document.getElementById('user-role-badge');
       const userName = document.getElementById('user-name');
       const userAv = document.getElementById('user-av');
 
       if (estado.ehAdmin) {
-        if (btnNovo) btnNovo.classList.remove('hidden');
+        btnsAdm.forEach(el => el.classList.remove('hidden'));
         badgeRole.innerText = 'ADMIN';
         badgeRole.className = 'user-badge admin';
         userName.innerText = 'Administrador';
         userAv.innerText = 'AD';
       } else {
-        if (btnNovo) btnNovo.classList.add('hidden');
+        btnsAdm.forEach(el => el.classList.add('hidden'));
         badgeRole.innerText = 'CONSULTA';
         badgeRole.className = 'user-badge user';
         userName.innerText = 'Usuário Consulta';
@@ -576,6 +593,17 @@
       salvarNoStorage();
       exibirToast('Endereçamento salvo com sucesso!');
       navegarPara('tela-enderecos');
+    }
+
+    function exportarDadosParaCodigo() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(estado.enderecos, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "enderecos_secexecpres.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      exibirToast('Arquivo JSON com os cadastros baixado!');
     }
 
     function copiarTexto(txt) {
