@@ -1272,7 +1272,9 @@
       </div>
     </div>
 
+    <div style="margin-bottom:16px;font-size:13px;color:var(--g500)" id="end-result-info"></div>
     <div class="contatos-grid" id="container-enderecos"></div>
+    <div id="paginacao-enderecos" style="margin-top:24px"></div>
   </section>
 
   <!-- ══ TELA CADASTRO / EDIÇÃO DE ENDEREÇAMENTO ══ -->
@@ -3095,6 +3097,8 @@ let todosEnderecos = [];
 let enderecosFiltrados = [];
 let filtroTipoEndereco = 'todos';
 let enderecoEditandoId = null;
+let paginaAtualEnderecos = 1;
+const POR_PAGINA_ENDERECOS = 12;
 
 window.carregarEnderecos = async () => {
   mostrarLoading(true);
@@ -3175,6 +3179,7 @@ window.carregarEnderecos = async () => {
 
 window.filtrarEnderecos = (tipo) => {
   if (tipo) filtroTipoEndereco = tipo;
+  paginaAtualEnderecos = 1;
 
   document.querySelectorAll('#tela-enderecos .btn-filt-tipo').forEach(b => {
     const isTarget = b.getAttribute('onclick')?.includes(`'${filtroTipoEndereco}'`);
@@ -3205,21 +3210,37 @@ window.limparBuscaEnd = () => {
 
 function renderizarGridEnderecos() {
   const container = document.getElementById("container-enderecos");
+  const elInfo = document.getElementById("end-result-info");
+  const elPag = document.getElementById("paginacao-enderecos");
   if (!container) return;
 
-  if (!enderecosFiltrados.length) {
+  const totalItems = enderecosFiltrados.length;
+  if (!totalItems) {
     container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <i class="fas fa-folder-open"></i>
       <h3>Nenhum endereçamento encontrado</h3>
       <p>Tente ajustar os filtros ou adicione um novo endereçamento.</p>
     </div>`;
+    if (elInfo) elInfo.textContent = "Nenhum endereçamento encontrado.";
+    if (elPag) elPag.innerHTML = "";
     return;
+  }
+
+  const totalPaginas = Math.ceil(totalItems / POR_PAGINA_ENDERECOS);
+  if (paginaAtualEnderecos > totalPaginas) paginaAtualEnderecos = totalPaginas;
+
+  const inicio = (paginaAtualEnderecos - 1) * POR_PAGINA_ENDERECOS;
+  const fim = Math.min(inicio + POR_PAGINA_ENDERECOS, totalItems);
+  const pagina = enderecosFiltrados.slice(inicio, fim);
+
+  if (elInfo) {
+    elInfo.innerHTML = `Exibindo <strong>${inicio + 1}–${fim}</strong> de <strong>${totalItems}</strong> endereçamento(s)`;
   }
 
   const canEdit = checkPermission("edit");
   const canDelete = checkPermission("delete");
 
-  container.innerHTML = enderecosFiltrados.map(item => {
+  container.innerHTML = pagina.map(item => {
     const isSimples = item.tipo === 'simples';
     const badgeHtml = isSimples 
       ? `<span class="badge badge-simples" style="background:rgba(79,70,229,0.1);color:var(--primary);padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;">Ofício Simples</span>`
@@ -3275,7 +3296,42 @@ function renderizarGridEnderecos() {
       </div>
     `;
   }).join("");
+
+  renderizarPaginacaoEnderecos(totalPaginas);
 }
+
+function renderizarPaginacaoEnderecos(totalPaginas) {
+  const el = document.getElementById("paginacao-enderecos");
+  if (!el) return;
+  if (totalPaginas <= 1) { el.innerHTML = ""; return; }
+
+  let html = `<div class="paginacao">
+    <button class="pag-btn" onclick="mudarPaginaEnderecos(${paginaAtualEnderecos - 1})" ${paginaAtualEnderecos === 1 ? "disabled" : ""}>
+      <i class="fas fa-chevron-left"></i>
+    </button>`;
+
+  for (let i = 1; i <= totalPaginas; i++) {
+    if (i === 1 || i === totalPaginas || Math.abs(i - paginaAtualEnderecos) <= 2) {
+      html += `<button class="pag-btn ${i === paginaAtualEnderecos ? "ativo" : ""}" onclick="mudarPaginaEnderecos(${i})">${i}</button>`;
+    } else if (Math.abs(i - paginaAtualEnderecos) === 3) {
+      html += `<span style="padding:0 4px;color:var(--g400)">…</span>`;
+    }
+  }
+
+  html += `<button class="pag-btn" onclick="mudarPaginaEnderecos(${paginaAtualEnderecos + 1})" ${paginaAtualEnderecos === totalPaginas ? "disabled" : ""}>
+    <i class="fas fa-chevron-right"></i>
+  </button></div>`;
+
+  el.innerHTML = html;
+}
+
+window.mudarPaginaEnderecos = (p) => {
+  const totalPaginas = Math.ceil(enderecosFiltrados.length / POR_PAGINA_ENDERECOS);
+  if (p < 1 || p > totalPaginas) return;
+  paginaAtualEnderecos = p;
+  renderizarGridEnderecos();
+  window.scrollTo(0, 0);
+};
 
 window.abrirFormEndereco = (id = null) => {
   if (!checkPermission("create")) {
