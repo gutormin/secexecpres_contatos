@@ -152,6 +152,10 @@
     .end-card-actions { padding:12px 20px; border-top:1px solid var(--g200); display:flex; gap:8px; background:white; justify-content:flex-end; }
     .btn-copy { background:var(--green-l); color:var(--green); border:1px solid #A7F3D0; padding:8px 14px; border-radius:var(--radius-xs); font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:6px; }
     .btn-copy:hover { background:var(--green); color:white; }
+    .btn-action-sm { background:var(--g100); color:var(--g700); border:none; padding:8px 12px; border-radius:var(--radius-xs); font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:4px; transition:all var(--trans); }
+    .btn-action-sm:hover { background:var(--g200); }
+    .btn-action-sm.del { background:var(--red-l); color:var(--red); }
+    .btn-action-sm.del:hover { background:var(--red); color:white; }
 
     .form-card { background:white; border-radius:var(--radius); border:1px solid var(--g200); padding:32px; box-shadow:var(--shadow); max-width:800px; margin:0 auto; }
     .fgroup { margin-bottom:20px; }
@@ -422,10 +426,19 @@
             <div class="end-card-body">${texto}</div>
             <div class="end-card-actions">
               <button class="btn-copy" onclick="copiarTexto(\`${escapeHtml(texto)}\`)"><i class="fa-solid fa-copy"></i> Copiar</button>
+              <button class="btn-action-sm del" onclick="excluirEndereco(${item.id})"><i class="fa-solid fa-trash"></i> Excluir</button>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    function excluirEndereco(id) {
+      if (confirm('Deseja realmente excluir este modelo de endereçamento?')) {
+        estado.enderecos = estado.enderecos.filter(item => item.id !== id);
+        renderizarEnderecos();
+        exibirToast('Endereçamento excluído com sucesso!');
+      }
     }
 
     function alternarCamposTipoForm() {
@@ -438,7 +451,7 @@
       document.getElementById('end-vocativo').required = ehSimples;
       document.getElementById('end-nome').required = ehSimples;
       document.getElementById('end-cargo').required = ehSimples;
-      document.getElementById('end-orgao').required = false; // Campo Opcional
+      document.getElementById('end-orgao').required = false;
       document.getElementById('end-local').required = ehSimples;
       document.getElementById('end-texto-circular').required = !ehSimples;
 
@@ -459,7 +472,7 @@
           voc || '[Vocativo]',
           nome || '[Nome]',
           cargo || '[Cargo]',
-          orgao, // Se vazio, omite a linha completamente
+          orgao,
           local || '[Local]'
         );
       } else {
