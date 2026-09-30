@@ -156,6 +156,7 @@
     .form-card { background:white; border-radius:var(--radius); border:1px solid var(--g200); padding:32px; box-shadow:var(--shadow); max-width:800px; margin:0 auto; }
     .fgroup { margin-bottom:20px; }
     .fgroup label { display:block; font-size:12px; font-weight:700; color:var(--g600); margin-bottom:6px; text-transform:uppercase; }
+    .fgroup label .opt { color:var(--g400); font-weight:500; text-transform:none; }
     .fgroup input, .fgroup select, .fgroup textarea { width:100%; padding:11px 14px; border:1.5px solid var(--g200); border-radius:var(--radius-sm); font-size:14px; font-family:var(--font); color:var(--g900); outline:none; }
     .preview-box { background:#F8FAFC; border:1px solid var(--g300); border-radius:var(--radius-sm); padding:20px; white-space:pre-line; color:var(--g900); margin-top:10px; font-size:14px; }
     
@@ -282,7 +283,7 @@
         <div class="enderecos-grid" id="container-enderecos"></div>
       </div>
 
-      <!-- TELA CADASTRO DE ENDEREÇAMENTO (SEM CAMPO TÍTULO) -->
+      <!-- TELA CADASTRO DE ENDEREÇAMENTO -->
       <div id="tela-cad-endereco" class="tela">
         <div class="tela-header">
           <div class="tela-header-left">
@@ -308,10 +309,10 @@
 
             <!-- CAMPOS PARA OFÍCIO SIMPLES -->
             <div id="campos-simples">
-              <div class="fgroup"><label>Vocativo / Tratamento *</label><input type="text" id="end-vocativo" placeholder="Ex: A Sua Excelência a Senhora" oninput="atualizarPreview()" required></div>
-              <div class="fgroup"><label>Nome da Autoridade *</label><input type="text" id="end-nome" placeholder="Ex: Desembargadora ALICE TELES DE OLIVEIRA" oninput="atualizarPreview()" required></div>
-              <div class="fgroup"><label>Cargo / Função *</label><input type="text" id="end-cargo" placeholder="Ex: Coordenadora Estadual da Mulher em Situação de Violência Doméstica e Familiar" oninput="atualizarPreview()" required></div>
-              <div class="fgroup"><label>Órgão / Instituição *</label><input type="text" id="end-orgao" placeholder="Ex: Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()" required></div>
+              <div class="fgroup"><label>Vocativo / Tratamento *</label><input type="text" id="end-vocativo" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreview()" required></div>
+              <div class="fgroup"><label>Nome da Autoridade *</label><input type="text" id="end-nome" placeholder="Ex: Desembargador FABIANO ABEL DE ARAGÃO FERNANDES" oninput="atualizarPreview()" required></div>
+              <div class="fgroup"><label>Cargo / Função *</label><input type="text" id="end-cargo" placeholder="Ex: 1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()" required></div>
+              <div class="fgroup"><label>Órgão / Instituição <span class="opt">(Opcional)</span></label><input type="text" id="end-orgao" placeholder="Ex: Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()"></div>
               <div class="fgroup"><label>Expressão Final / Local *</label><input type="text" id="end-local" placeholder="Ex: N E S T A" oninput="atualizarPreview()" required></div>
             </div>
 
@@ -348,10 +349,10 @@
         {
           id: 1,
           tipo: 'simples',
-          vocativo: 'A Sua Excelência a Senhora',
-          nome: 'Desembargadora ALICE TELES DE OLIVEIRA',
-          cargo: 'Coordenadora Estadual da Mulher em Situação de Violência Doméstica e Familiar',
-          orgao: 'Tribunal de Justiça do Estado de Goiás',
+          vocativo: 'A Sua Excelência o Senhor',
+          nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
+          cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
+          orgao: '',
           local: 'N E S T A'
         },
         {
@@ -384,13 +385,23 @@
       renderizarEnderecos();
     }
 
+    function montarTextoSimples(voc, nome, cargo, orgao, local) {
+      let linhas = [];
+      if (voc) linhas.push(voc);
+      if (nome) linhas.push(nome);
+      if (cargo) linhas.push(cargo);
+      if (orgao && orgao.trim() !== '') linhas.push(orgao);
+      if (local) linhas.push(local);
+      return linhas.join('\n');
+    }
+
     function renderizarEnderecos() {
       const container = document.getElementById('container-enderecos');
       const busca = (document.getElementById('input-busca-end')?.value || '').toLowerCase();
 
       const filtrados = estado.enderecos.filter(item => {
         const atendeTipo = estado.filtroTipo === 'todos' || item.tipo === estado.filtroTipo;
-        let textoBusca = item.tipo === 'simples' ? `${item.vocativo} ${item.nome} ${item.cargo} ${item.orgao} ${item.local}` : `${item.textoCircular}`;
+        let textoBusca = item.tipo === 'simples' ? `${item.vocativo} ${item.nome} ${item.cargo} ${item.orgao || ''} ${item.local}` : `${item.textoCircular}`;
         return atendeTipo && textoBusca.toLowerCase().includes(busca);
       });
 
@@ -401,7 +412,7 @@
 
       container.innerHTML = filtrados.map(item => {
         const tituloCard = item.tipo === 'simples' ? item.cargo : 'Ofício Circular';
-        const texto = item.tipo === 'simples' ? `${item.vocativo}\n${item.nome}\n${item.cargo}\n${item.orgao}\n${item.local}` : item.textoCircular;
+        const texto = item.tipo === 'simples' ? montarTextoSimples(item.vocativo, item.nome, item.cargo, item.orgao, item.local) : item.textoCircular;
         return `
           <div class="end-card">
             <div class="end-card-header">
@@ -427,7 +438,7 @@
       document.getElementById('end-vocativo').required = ehSimples;
       document.getElementById('end-nome').required = ehSimples;
       document.getElementById('end-cargo').required = ehSimples;
-      document.getElementById('end-orgao').required = ehSimples;
+      document.getElementById('end-orgao').required = false; // Campo Opcional
       document.getElementById('end-local').required = ehSimples;
       document.getElementById('end-texto-circular').required = !ehSimples;
 
@@ -438,7 +449,19 @@
       const tipo = document.getElementById('end-tipo').value;
       let p = '';
       if (tipo === 'simples') {
-        p = `${document.getElementById('end-vocativo').value || '[Vocativo]'}\n${document.getElementById('end-nome').value || '[Nome]'}\n${document.getElementById('end-cargo').value || '[Cargo]'}\n${document.getElementById('end-orgao').value || '[Órgão]'}\n${document.getElementById('end-local').value || '[Local]'}`;
+        const voc = document.getElementById('end-vocativo').value;
+        const nome = document.getElementById('end-nome').value;
+        const cargo = document.getElementById('end-cargo').value;
+        const orgao = document.getElementById('end-orgao').value;
+        const local = document.getElementById('end-local').value;
+        
+        p = montarTextoSimples(
+          voc || '[Vocativo]',
+          nome || '[Nome]',
+          cargo || '[Cargo]',
+          orgao, // Se vazio, omite a linha completamente
+          local || '[Local]'
+        );
       } else {
         p = document.getElementById('end-texto-circular').value || '[Texto circular]';
       }
