@@ -3174,17 +3174,23 @@ window.carregarEnderecos = async () => {
 };
 
 window.filtrarEnderecos = (tipo) => {
-  filtroTipoEndereco = tipo;
+  if (tipo) filtroTipoEndereco = tipo;
+
   document.querySelectorAll('#tela-enderecos .btn-filt-tipo').forEach(b => {
-    b.classList.toggle('ativo-todos', b.getAttribute('onclick')?.includes(`'${tipo}'`));
+    const isTarget = b.getAttribute('onclick')?.includes(`'${filtroTipoEndereco}'`);
+    b.classList.toggle('ativo-todos', isTarget);
   });
 
-  const busca = (document.getElementById("input-busca-end")?.value || "").toLowerCase().trim();
+  const buscaRaw = (document.getElementById("input-busca-end")?.value || "").trim();
+  const busca = buscaRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   
   enderecosFiltrados = todosEnderecos.filter(item => {
-    const matchTipo = (tipo === 'todos' || item.tipo === tipo);
-    const texto = `${item.destinatario || ''} ${item.cargo || ''} ${item.orgao || ''} ${item.vocativo || ''} ${item.nome || ''}`.toLowerCase();
-    const matchBusca = !busca || texto.includes(busca);
+    const matchTipo = (filtroTipoEndereco === 'todos' || item.tipo === filtroTipoEndereco);
+    
+    const textoBruto = `${item.vocativo || ''} ${item.nome || ''} ${item.destinatario || ''} ${item.cargo || ''} ${item.orgao || ''} ${item.local || ''} ${item.localData || ''} ${item.textoCircular || ''}`;
+    const textoNormalizado = textoBruto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    
+    const matchBusca = !busca || textoNormalizado.includes(busca);
     return matchTipo && matchBusca;
   });
 
