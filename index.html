@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- FIREBASE SDK PARA CONEXÃO COM BANCO DE DADOS EM TEMPO REAL DA NUVEM -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     :root {
@@ -170,13 +173,11 @@
     #toast { position:fixed; bottom:24px; right:24px; background:var(--g900); color:white; padding:12px 24px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; z-index:2000; transform:translateY(100px); opacity:0; transition:all .3s ease; }
     #toast.show { transform:translateY(0); opacity:1; }
 
-    /* PANEL EXPORTAR / IMPORTAR DADOS DO GITHUB */
-    .github-sync-box {
-      background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-sm);
-      padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    /* INDICADOR DE BANCO DE DADOS CONECTADO */
+    .db-sync-indicator {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+      color: #059669; background: #D1FAE5; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;
     }
-    .github-sync-text { font-size: 13px; color: #1E40AF; }
-    .github-sync-text strong { display: block; font-size: 14px; color: #1E3A8A; }
   </style>
 </head>
 <body>
@@ -275,20 +276,11 @@
           <div class="tela-header-left">
             <button class="btn-voltar" onclick="navegarPara('tela-inicio')"><i class="fa-solid fa-arrow-left"></i></button>
             <div class="tela-titulo">
-              <h2>Endereçamentos para Ofícios</h2>
-              <p>Cabeçalhos oficiais para expedição de Ofícios Simples e Circulares</p>
+              <h2>Endereçamentos para Ofícios <span class="db-sync-indicator"><i class="fa-solid fa-wifi"></i> Banco Online</span></h2>
+              <p>Cabeçalhos oficiais sincronizados em tempo real para todos os usuários</p>
             </div>
           </div>
           <button class="btn-pri adm-only" onclick="navegarPara('tela-cad-endereco')"><i class="fa-solid fa-plus"></i> Novo Endereçamento</button>
-        </div>
-
-        <!-- PAINEL ADM PARA EXPORTAR DADOS ATUALIZADOS DO CÓDIGO -->
-        <div class="github-sync-box adm-only">
-          <div class="github-sync-text">
-            <strong><i class="fa-solid fa-code-commit"></i> Gerenciador de Lista Pública (GitHub)</strong>
-            <span>Copie o arquivo de dados dos cadastros efetuados para atualizar a lista pública global no repositório.</span>
-          </div>
-          <button class="btn-sec" onclick="exportarDadosParaCodigo()"><i class="fa-solid fa-download"></i> Baixar Dados Atualizados (JSON)</button>
         </div>
 
         <div class="toolbar-box">
@@ -368,9 +360,23 @@
   <div id="toast"><i class="fa-solid fa-check-circle" style="color:#10B981;"></i> <span id="toast-msg">Mensagem</span></div>
 
   <script>
+    // CONFIGURAÇÃO DO BANCO DE DADOS FIREBASE EM NUVEM EM TEMPO REAL
+    const firebaseConfig = {
+      databaseURL: "https://secexecpres-contatos-default-rtdb.firebaseio.com/"
+    };
+    
+    // Inicializa o Firebase Database
+    let db;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database().ref('enderecos');
+    } catch(e) {
+      console.log('Modo offline / fallback ativo');
+    }
+
     const ENDERECOS_PADRAO = [
       {
-        id: 1,
+        id: 101,
         tipo: 'simples',
         vocativo: 'A Sua Excelência o Senhor',
         nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
@@ -379,7 +385,7 @@
         local: 'N E S T A'
       },
       {
-        id: 2,
+        id: 102,
         tipo: 'circular',
         textoCircular: 'Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás'
       }
@@ -391,28 +397,45 @@
       enderecos: []
     };
 
-    function carregarEnderecosDoStorage() {
-      const salvos = localStorage.getItem('secexecpres_enderecos');
-      if (salvos) {
-        try {
-          estado.enderecos = JSON.parse(salvos);
-        } catch (e) {
-          estado.enderecos = ENDERECOS_PADRAO;
-        }
+    function conectarBancoNuvem() {
+      if (db) {
+        db.on('value', (snapshot) => {
+          const dados = snapshot.val();
+          if (dados) {
+            estado.enderecos = Array.isArray(dados) ? dados : Object.values(dados);
+          } else {
+            estado.enderecos = ENDERECOS_PADRAO;
+            db.set(ENDERECOS_PADRAO);
+          }
+          renderizarEnderecos();
+        }, (error) => {
+          carregarFallbackLocal();
+        });
       } else {
-        estado.enderecos = ENDERECOS_PADRAO;
-        salvarNoStorage();
+        carregarFallbackLocal();
       }
     }
 
-    function salvarNoStorage() {
+    function carregarFallbackLocal() {
+      const salvos = localStorage.getItem('secexecpres_enderecos');
+      if (salvos) {
+        try { estado.enderecos = JSON.parse(salvos); } catch (e) { estado.enderecos = ENDERECOS_PADRAO; }
+      } else {
+        estado.enderecos = ENDERECOS_PADRAO;
+      }
+      renderizarEnderecos();
+    }
+
+    function salvarDadosNuvem() {
+      if (db) {
+        db.set(estado.enderecos);
+      }
       localStorage.setItem('secexecpres_enderecos', JSON.stringify(estado.enderecos));
     }
 
     document.addEventListener('DOMContentLoaded', () => { 
-      carregarEnderecosDoStorage();
+      conectarBancoNuvem();
       atualizarControleAcesso();
-      renderizarEnderecos(); 
     });
 
     function alternarPerfilAdmin() {
@@ -526,7 +549,7 @@
       }
       if (confirm('Deseja realmente excluir este modelo de endereçamento?')) {
         estado.enderecos = estado.enderecos.filter(item => item.id !== id);
-        salvarNoStorage();
+        salvarDadosNuvem();
         renderizarEnderecos();
         exibirToast('Endereçamento excluído com sucesso!');
       }
@@ -590,20 +613,9 @@
         obj.textoCircular = document.getElementById('end-texto-circular').value;
       }
       estado.enderecos.push(obj);
-      salvarNoStorage();
+      salvarDadosNuvem();
       exibirToast('Endereçamento salvo com sucesso!');
       navegarPara('tela-enderecos');
-    }
-
-    function exportarDadosParaCodigo() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(estado.enderecos, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", "enderecos_secexecpres.json");
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      exibirToast('Arquivo JSON com os cadastros baixado!');
     }
 
     function copiarTexto(txt) {
