@@ -3,14 +3,11 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SecExecPres | Gestão de Contatos & Endereçamentos</title>
+  <title>SecExecPres | Gerenciamento de Contatos</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <!-- FIREBASE SDK PARA CONEXÃO COM BANCO DE DADOS EM TEMPO REAL DA NUVEM -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     :root {
@@ -35,7 +32,86 @@
     ::-webkit-scrollbar-thumb { background:var(--g300); border-radius:3px; }
     .hidden { display:none !important; }
 
-    /* TOPO FIXO */
+    /* ══════════════════════════════════
+       TELA DE LOGIN
+    ══════════════════════════════════ */
+    #login-page {
+      position:fixed; inset:0;
+      background:linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+      display:flex; align-items:center; justify-content:center;
+      padding:24px; z-index:1000;
+    }
+    .login-card {
+      background:white; padding:40px;
+      border-radius:var(--radius); width:100%; max-width:420px;
+      box-shadow:var(--shadow-lg); text-align:center;
+      border:1px solid var(--g200);
+    }
+    .login-ico {
+      width:64px; height:64px; background:var(--primary);
+      color:white; border-radius:14px;
+      display:inline-flex; align-items:center; justify-content:center;
+      font-size:24px; margin-bottom:20px;
+      box-shadow:0 8px 24px rgba(79, 70, 229, .35);
+    }
+    .login-card h2 { font-size:24px; font-weight:800; color:var(--g900); margin-bottom:6px; }
+    .login-card p { color:var(--g500); font-size:13px; margin-bottom:24px; }
+    .login-form { text-align:left; }
+    .login-form .fgroup { margin-bottom:20px; }
+    .btn-login {
+      width:100%; padding:12px; background:var(--primary);
+      color:white; border:none; border-radius:var(--radius-sm);
+      font-size:14px; font-weight:700; cursor:pointer;
+      font-family:var(--font); transition:all var(--trans);
+      box-shadow:0 4px 16px rgba(79, 70, 229, .2);
+    }
+    .btn-login:hover { background:var(--primary-h); transform:translateY(-1px); box-shadow:0 6px 20px rgba(79, 70, 229, .3); }
+    .btn-login:active { transform:translateY(0); }
+    #db-status {
+      display:inline-block; font-size:11px; font-weight:700;
+      color:var(--g500); background:var(--g100);
+      padding:4px 12px; border-radius:20px; margin-top:10px;
+      text-transform:uppercase; letter-spacing:.5px;
+    }
+
+    /* ══════════════════════════════════
+       USER PROFILE NA TOPBAR
+    ══════════════════════════════════ */
+    .topbar-user {
+      display:flex; align-items:center; gap:8px;
+      cursor:pointer; padding:4px 8px; border-radius:8px;
+      transition:all var(--trans); color:rgba(255, 255, 255, .8);
+    }
+    .topbar-user:hover { background:rgba(255, 255, 255, .1); color:white; }
+    .topbar-user .user-av { width:32px; height:32px; border-radius:50%; border:1.5px solid rgba(255,255,255,.2); }
+    .topbar-user .user-info { display:flex; flex-direction:column; text-align:left; }
+    .topbar-user .user-info span:first-child { font-size:12px; font-weight:700; line-height:1.2; }
+    .topbar-user .user-info span:last-child { font-size:10px; color:rgba(255,255,255,.4); font-weight:500; }
+    .logout-btn { color:#f43f5e !important; }
+    .logout-btn:hover { background:rgba(244,63,94,.15) !important; color:white !important; }
+
+    /* ══════════════════════════════════
+       AUDIT TABLE STYLE
+    ══════════════════════════════════ */
+    .audit-table { width:100%; border-collapse:collapse; margin-top:16px; }
+    .audit-table th, .audit-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--g200); }
+    .audit-table th { background:var(--g50); font-weight:700; color:var(--g600); font-size:12px; text-transform:uppercase; }
+    .audit-table td { font-size:13.5px; }
+
+    /* ══════════════════════════════════
+       CLIQUE PARA COPIAR
+    ══════════════════════════════════ */
+    .copyable {
+      cursor:pointer; transition:all var(--trans);
+    }
+    .copyable:hover {
+      color:var(--primary) !important;
+      text-decoration:underline;
+    }
+
+    /* ══════════════════════════════════
+       TOPO FIXO
+    ══════════════════════════════════ */
     .topbar {
       position:fixed; top:0; left:0; right:0; height:64px;
       background:#0F172A;
@@ -43,7 +119,7 @@
       padding:0 32px; z-index:100;
       box-shadow:0 2px 12px rgba(0,0,0,.3);
     }
-    .topbar-brand { display:flex; align-items:center; gap:12px; cursor:pointer; }
+    .topbar-brand { display:flex; align-items:center; gap:12px; }
     .topbar-logo {
       width:40px; height:40px; background:var(--primary);
       border-radius:10px; display:flex; align-items:center;
@@ -51,10 +127,10 @@
     }
     .topbar-brand-text strong { color:white; font-size:16px; font-weight:800; display:block; }
     .topbar-brand-text span   { color:rgba(255,255,255,.4); font-size:11px; }
-    .topbar-nav { display:flex; gap:6px; align-items:center; }
+    .topbar-nav { display:flex; gap:8px; }
     .topbar-btn {
       display:flex; align-items:center; gap:8px;
-      padding:8px 14px; border-radius:8px;
+      padding:8px 16px; border-radius:8px;
       font-size:13px; font-weight:600; font-family:var(--font);
       cursor:pointer; border:none; transition:all var(--trans);
       color:rgba(255,255,255,.7); background:transparent;
@@ -62,619 +138,3196 @@
     .topbar-btn:hover { background:rgba(255,255,255,.1); color:white; }
     .topbar-btn.ativo { background:rgba(255,255,255,.15); color:white; }
     .topbar-divider { width:1px; height:28px; background:rgba(255,255,255,.15); margin:0 4px; }
-    
-    .topbar-user {
-      display:flex; align-items:center; gap:8px;
-      padding:4px 10px; border-radius:8px; background:rgba(255,255,255,.08);
-      color:white; font-size:12px; font-weight:600; cursor:pointer;
-    }
-    .user-av { width:28px; height:28px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px; }
-    .user-badge { font-size:10px; padding:2px 6px; border-radius:10px; font-weight:800; text-transform:uppercase; margin-left:4px; }
-    .user-badge.admin { background:#EF4444; color:white; }
-    .user-badge.user  { background:#3B82F6; color:white; }
+    .topbar-btn-new { border:1px solid rgba(255,255,255,.2) !important; }
+    .topbar-btn-new.com { color:#38BDF8 !important; }
+    .topbar-btn-new.com:hover { background:rgba(3,105,161,.35) !important; border-color:#38BDF8 !important; color:white !important; }
+    .topbar-btn-new.ext { color:#A78BFA !important; }
+    .topbar-btn-new.ext:hover { background:rgba(124,58,237,.35) !important; border-color:#A78BFA !important; color:white !important; }
 
-    /* TELAS */
+    /* ══════════════════════════════════
+       WRAPPER PRINCIPAL
+    ══════════════════════════════════ */
     .app-wrap { padding-top:64px; min-height:100vh; }
-    .tela { display:none; min-height:calc(100vh - 64px); padding:32px; }
-    .tela.ativa { display:block; }
 
-    /* TELA INICIAL */
+    /* ══════════════════════════════════
+       TELA INICIAL
+    ══════════════════════════════════ */
     #tela-inicio {
       min-height:calc(100vh - 64px);
       background:linear-gradient(160deg, #0F172A 0%, #1E3A5F 50%, #1D4ED8 100%);
       position:relative; overflow:hidden;
-      display:none; flex-direction:column; align-items:center; justify-content:center; padding:48px 24px;
     }
-    #tela-inicio.ativa { display:flex; }
     #tela-inicio::before {
       content:''; position:absolute; inset:0;
       background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
-    .inicio-header { text-align:center; margin-bottom:50px; position:relative; z-index:1; }
+    .inicio-header { text-align:center; margin-bottom:60px; position:relative; z-index:1; }
     .inicio-badge {
       display:inline-flex; align-items:center; gap:8px;
       background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
       border-radius:30px; padding:8px 20px; color:rgba(255,255,255,.85);
       font-size:12px; font-weight:600; letter-spacing:.5px;
-      text-transform:uppercase; margin-bottom:24px; backdrop-filter:blur(10px);
+      text-transform:uppercase; margin-bottom:24px;
+      backdrop-filter:blur(10px);
     }
-    .inicio-titulo { font-size:46px; font-weight:900; color:white; line-height:1.15; margin-bottom:16px; }
+    .inicio-titulo {
+      font-size:48px; font-weight:900; color:white;
+      line-height:1.15; letter-spacing:-1px; margin-bottom:16px;
+    }
     .inicio-titulo span { color:#60A5FA; }
-    .inicio-sub { color:rgba(255,255,255,.65); font-size:16px; max-width:540px; margin:0 auto; }
+    .inicio-sub { color:rgba(255,255,255,.6); font-size:17px; max-width:480px; margin:0 auto; }
 
-    .inicio-cards { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; max-width:1200px; position:relative; z-index:1; }
+    .inicio-cards {
+      display:flex; gap:24px; position:relative; z-index:1;
+      flex-wrap:wrap; justify-content:center; max-width:960px;
+    }
     .inicio-card {
-      background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
-      border-radius:20px; padding:32px 24px; cursor:pointer; transition:all .3s ease;
-      width:260px; text-align:center; backdrop-filter:blur(12px); position:relative;
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:20px; padding:36px 32px;
+      cursor:pointer; transition:all .3s ease;
+      width:290px; text-align:center;
+      backdrop-filter:blur(12px);
+      position:relative; overflow:hidden;
     }
-    .inicio-card:hover { transform:translateY(-6px); box-shadow:0 20px 60px rgba(0,0,0,.4); border-color:rgba(255,255,255,.3); }
+    .inicio-card::before {
+      content:''; position:absolute; inset:0; opacity:0;
+      transition:opacity .3s ease;
+      border-radius:20px;
+    }
+    .inicio-card.card-com::before { background:linear-gradient(135deg,rgba(3,105,161,.4),rgba(3,105,161,.1)); }
+    .inicio-card.card-ext::before { background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(124,58,237,.1)); }
+    .inicio-card.card-cons::before { background:linear-gradient(135deg,rgba(16,185,129,.4),rgba(16,185,129,.1)); }
+    .inicio-card:hover { transform:translateY(-6px); box-shadow:0 20px 60px rgba(0,0,0,.4); }
+    .inicio-card:hover::before { opacity:1; }
+    .inicio-card:hover { border-color:rgba(255,255,255,.3); }
+
     .card-ico {
-      width:68px; height:68px; border-radius:18px;
+      width:72px; height:72px; border-radius:18px;
       display:flex; align-items:center; justify-content:center;
-      font-size:26px; margin:0 auto 18px;
+      font-size:28px; margin:0 auto 20px;
     }
-    .card-ico.com { background:rgba(3,105,161,.3); color:#38BDF8; }
-    .card-ico.ext { background:rgba(124,58,237,.3); color:#A78BFA; }
-    .card-ico.tel { background:rgba(16,185,129,.3); color:#34D399; }
-    .card-ico.end { background:rgba(245,158,11,.3); color:#FBBF24; }
-    
-    .inicio-card h3 { color:white; font-size:17px; font-weight:800; margin-bottom:8px; }
-    .inicio-card p { color:rgba(255,255,255,.55); font-size:13px; line-height:1.45; }
+    .card-com .card-ico  { background:rgba(3,105,161,.3);  color:#38BDF8; }
+    .card-ext .card-ico  { background:rgba(124,58,237,.3); color:#A78BFA; }
+    .card-cons .card-ico { background:rgba(16,185,129,.3); color:#34D399; }
+
+    .inicio-card h3 {
+      color:white; font-size:18px; font-weight:800;
+      margin-bottom:10px; position:relative; z-index:1;
+    }
+    .inicio-card p {
+      color:rgba(255,255,255,.55); font-size:13px;
+      line-height:1.5; position:relative; z-index:1;
+    }
     .card-arrow {
       display:inline-flex; align-items:center; justify-content:center;
-      width:34px; height:34px; border-radius:50%;
-      background:rgba(255,255,255,.1); color:white; margin-top:20px; font-size:13px;
+      width:36px; height:36px; border-radius:50%;
+      background:rgba(255,255,255,.1); color:white;
+      margin-top:20px; font-size:14px; position:relative; z-index:1;
+      transition:all .3s ease;
     }
+    .inicio-card:hover .card-arrow { background:rgba(255,255,255,.25); transform:translateX(4px); }
 
-    /* ESTILOS DO MÓDULO DE ENDEREÇAMENTOS */
-    .tela-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; gap:16px; flex-wrap:wrap; }
+    /* ══════════════════════════════════
+       TELAS INTERNAS
+    ══════════════════════════════════ */
+    .tela { display:none; min-height:calc(100vh - 64px); padding:32px; }
+    .tela.ativa { display:block; }
+    #tela-inicio.ativa { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 24px; }
+
+    .tela-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:32px; gap:16px; flex-wrap:wrap;
+    }
     .tela-header-left { display:flex; align-items:center; gap:16px; }
-    .btn-voltar { width:40px; height:40px; border-radius:10px; background:white; border:1.5px solid var(--g200); display:flex; align-items:center; justify-content:center; color:var(--g600); cursor:pointer; font-size:16px; }
-    .btn-voltar:hover { background:var(--primary-l); color:var(--primary); }
+    .btn-voltar {
+      width:40px; height:40px; border-radius:10px;
+      background:white; border:1.5px solid var(--g200);
+      display:flex; align-items:center; justify-content:center;
+      color:var(--g600); cursor:pointer; transition:all var(--trans);
+      font-size:16px; flex-shrink:0;
+    }
+    .btn-voltar:hover { background:var(--primary-l); border-color:var(--primary-m); color:var(--primary); }
     .tela-titulo h2 { font-size:26px; font-weight:800; color:var(--g900); }
     .tela-titulo p  { color:var(--g500); font-size:13px; margin-top:2px; }
 
-    .btn-pri { display:inline-flex; align-items:center; gap:8px; padding:11px 22px; background:var(--primary); color:white; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; cursor:pointer; font-family:var(--font); }
-    .btn-pri:hover { background:var(--primary-h); }
-    .btn-sec { display:inline-flex; align-items:center; gap:8px; padding:11px 22px; background:white; color:var(--g700); border:1.5px solid var(--g200); border-radius:var(--radius-sm); font-size:14px; font-weight:600; cursor:pointer; font-family:var(--font); }
+    /* ══════════════════════════════════
+       BOTÕES
+    ══════════════════════════════════ */
+    .btn-pri {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:11px 22px; background:var(--primary); color:white;
+      border:none; border-radius:var(--radius-sm); font-size:14px;
+      font-weight:700; font-family:var(--font); cursor:pointer;
+      transition:all var(--trans);
+    }
+    .btn-pri:hover { background:var(--primary-h); box-shadow:0 4px 16px rgba(29,78,216,.3); transform:translateY(-1px); }
+    .btn-sec {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:11px 22px; background:white; color:var(--g700);
+      border:1.5px solid var(--g200); border-radius:var(--radius-sm);
+      font-size:14px; font-weight:600; font-family:var(--font);
+      cursor:pointer; transition:all var(--trans);
+    }
+    .btn-sec:hover { border-color:var(--g300); background:var(--g50); }
+    .btn-ghost {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:8px 14px; background:transparent; color:var(--g600);
+      border:none; border-radius:var(--radius-sm); font-size:13px;
+      font-weight:600; font-family:var(--font); cursor:pointer;
+      transition:all var(--trans);
+    }
+    .btn-ghost:hover { background:var(--g100); color:var(--g900); }
 
-    .toolbar-box { background:white; border-radius:var(--radius); border:1px solid var(--g200); padding:20px 24px; box-shadow:var(--shadow); margin-bottom:24px; }
-    .search-row { display:flex; gap:12px; align-items:center; margin-bottom:16px; }
-    .search-box { flex:1; display:flex; align-items:center; gap:10px; padding:0 16px; background:var(--g50); border:1.5px solid var(--g200); border-radius:var(--radius-sm); }
-    .search-box input { flex:1; border:none; background:transparent; padding:12px 0; font-size:14px; font-family:var(--font); color:var(--g900); outline:none; }
+    /* ══════════════════════════════════
+       FORMULÁRIOS
+    ══════════════════════════════════ */
+    .form-card {
+      background:white; border-radius:var(--radius);
+      border:1px solid var(--g200); padding:32px;
+      box-shadow:var(--shadow); max-width:860px; margin:0 auto;
+    }
+    .form-section { margin-bottom:28px; }
+    .form-section-title {
+      font-size:13px; font-weight:700; color:var(--g500);
+      text-transform:uppercase; letter-spacing:.6px;
+      margin-bottom:16px; display:flex; align-items:center; gap:8px;
+    }
+    .form-section-title::after { content:''; flex:1; height:1px; background:var(--g200); }
 
-    .filter-tabs { display:flex; gap:8px; }
-    .filter-tab { padding:8px 16px; border-radius:20px; font-size:13px; font-weight:700; border:1.5px solid var(--g200); background:white; color:var(--g600); cursor:pointer; font-family:var(--font); }
-    .filter-tab.ativo { background:var(--primary); border-color:var(--primary); color:white; }
+    .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+    .col-2 { grid-column:span 2; }
+    @media(max-width:680px) {
+      .form-row-2,.form-row-3 { grid-template-columns:1fr; }
+      .col-2 { grid-column:span 1; }
+    }
 
-    .enderecos-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:20px; }
-    .end-card { background:white; border-radius:var(--radius); border:1.5px solid var(--g200); box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden; }
-    .end-card-header { padding:16px 20px; background:var(--g50); border-bottom:1px solid var(--g200); display:flex; align-items:center; justify-content:space-between; }
-    .end-badge { font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; text-transform:uppercase; }
-    .end-badge.simples { background:var(--com-l); color:var(--com); }
-    .end-badge.circular { background:var(--ext-l); color:var(--ext); }
-    .end-card-body { padding:20px; flex:1; font-size:14px; color:var(--g800); background:#FAFAFA; border-radius:8px; margin:16px; border:1px dashed var(--g300); white-space:pre-line; }
-    .end-card-actions { padding:12px 20px; border-top:1px solid var(--g200); display:flex; gap:8px; background:white; justify-content:flex-end; }
-    .btn-copy { background:var(--green-l); color:var(--green); border:1px solid #A7F3D0; padding:8px 14px; border-radius:var(--radius-xs); font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:6px; }
-    .btn-copy:hover { background:var(--green); color:white; }
-    .btn-action-sm { background:var(--g100); color:var(--g700); border:none; padding:8px 12px; border-radius:var(--radius-xs); font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:4px; transition:all var(--trans); }
-    .btn-action-sm:hover { background:var(--g200); }
-    .btn-action-sm.edit { background:var(--primary-l); color:var(--primary); }
-    .btn-action-sm.edit:hover { background:var(--primary-m); }
-    .btn-action-sm.del { background:var(--red-l); color:var(--red); }
-    .btn-action-sm.del:hover { background:var(--red); color:white; }
+    .fgroup { margin-bottom:0; }
+    .fgroup label {
+      display:block; font-size:12px; font-weight:700;
+      color:var(--g600); margin-bottom:6px; letter-spacing:.3px;
+      text-transform:uppercase;
+    }
+    .fgroup label .req { color:var(--red); margin-left:2px; }
+    .fgroup input, .fgroup select, .fgroup textarea {
+      width:100%; padding:11px 14px;
+      border:1.5px solid var(--g200); border-radius:var(--radius-sm);
+      font-size:14px; font-family:var(--font); color:var(--g900);
+      background:white; transition:all var(--trans); outline:none;
+      appearance:none;
+    }
+    .fgroup input:focus, .fgroup select:focus, .fgroup textarea:focus {
+      border-color:var(--primary); box-shadow:0 0 0 3px rgba(29,78,216,.1);
+    }
+    .fgroup input::placeholder, .fgroup textarea::placeholder { color:var(--g400); }
+    .fgroup textarea { resize:vertical; min-height:90px; }
+    .field-err { display:block; font-size:12px; color:var(--red); margin-top:4px; }
 
-    .form-card { background:white; border-radius:var(--radius); border:1px solid var(--g200); padding:32px; box-shadow:var(--shadow); max-width:800px; margin:0 auto; }
-    .fgroup { margin-bottom:20px; }
-    .fgroup label { display:block; font-size:12px; font-weight:700; color:var(--g600); margin-bottom:6px; text-transform:uppercase; }
-    .fgroup label .opt { color:var(--g400); font-weight:500; text-transform:none; }
-    .fgroup input, .fgroup select, .fgroup textarea { width:100%; padding:11px 14px; border:1.5px solid var(--g200); border-radius:var(--radius-sm); font-size:14px; font-family:var(--font); color:var(--g900); outline:none; }
-    .preview-box { background:#F8FAFC; border:1px solid var(--g300); border-radius:var(--radius-sm); padding:20px; white-space:pre-line; color:var(--g900); margin-top:10px; font-size:14px; }
-    
-    #toast { position:fixed; bottom:24px; right:24px; background:var(--g900); color:white; padding:12px 24px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; z-index:2000; transform:translateY(100px); opacity:0; transition:all .3s ease; }
-    #toast.show { transform:translateY(0); opacity:1; }
+    .dyn-field { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+    .dyn-field input { flex:1; }
+    .dyn-field select { width:110px; flex-shrink:0; }
+    .btn-add-field {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:5px 12px; background:var(--primary-l); color:var(--primary);
+      border:1px solid var(--primary-m); border-radius:6px;
+      font-size:12px; font-weight:600; cursor:pointer;
+      font-family:var(--font); transition:all var(--trans);
+      margin-left:8px;
+    }
+    .btn-add-field:hover { background:var(--primary-m); }
+    .btn-rm-field {
+      width:32px; height:32px; flex-shrink:0;
+      background:var(--red-l); color:var(--red);
+      border:none; border-radius:6px; cursor:pointer;
+      font-size:13px; display:flex; align-items:center; justify-content:center;
+      transition:all var(--trans);
+    }
+    .btn-rm-field:hover { background:var(--red); color:white; }
 
-    /* INDICADOR DE BANCO DE DADOS CONECTADO */
-    .db-sync-indicator {
-      display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
-      color: #059669; background: #D1FAE5; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;
+    .form-actions {
+      display:flex; justify-content:flex-end; gap:12px;
+      padding-top:24px; border-top:1px solid var(--g200); margin-top:8px;
+    }
+
+    .chk-label { display:flex; align-items:center; gap:8px; font-size:14px; color:var(--g700); cursor:pointer; }
+    .chk-label input { width:16px; height:16px; accent-color:var(--primary); cursor:pointer; }
+
+    /* TIPO SELECTOR */
+    .tipo-selector {
+      display:flex; gap:12px; margin-bottom:28px;
+      padding:16px; background:var(--g50);
+      border-radius:var(--radius-sm); border:1px solid var(--g200);
+    }
+    .tipo-btn {
+      flex:1; padding:14px; border-radius:var(--radius-sm);
+      border:2px solid var(--g200); background:white;
+      font-size:14px; font-weight:700; font-family:var(--font);
+      cursor:pointer; transition:all .25s ease;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      color:var(--g500);
+    }
+    .tipo-btn.ativo.com { border-color:var(--com); background:var(--com-l); color:var(--com); }
+    .tipo-btn.ativo.ext { border-color:var(--ext); background:var(--ext-l); color:var(--ext); }
+    .tipo-btn:hover:not(.ativo) { border-color:var(--g300); background:var(--g100); color:var(--g700); }
+
+    /* ══════════════════════════════════
+       CONSULTA
+    ══════════════════════════════════ */
+    .consulta-toolbar {
+      background:white; border-radius:var(--radius);
+      border:1px solid var(--g200); padding:20px 24px;
+      box-shadow:var(--shadow); margin-bottom:20px;
+    }
+    .consulta-search-row { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+    .search-box {
+      flex:1; display:flex; align-items:center; gap:10px;
+      padding:0 16px; background:var(--g50);
+      border:1.5px solid var(--g200); border-radius:var(--radius-sm);
+      transition:all var(--trans);
+    }
+    .search-box:focus-within { border-color:var(--primary); background:white; box-shadow:0 0 0 3px rgba(29,78,216,.1); }
+    .search-box i { color:var(--g400); font-size:15px; flex-shrink:0; }
+    .search-box input {
+      flex:1; border:none; background:transparent; padding:12px 0;
+      font-size:14px; font-family:var(--font); color:var(--g900); outline:none;
+    }
+    .search-box input::placeholder { color:var(--g400); }
+    .btn-clear-search {
+      background:none; border:none; color:var(--g400); cursor:pointer;
+      font-size:13px; padding:4px; transition:color var(--trans);
+    }
+    .btn-clear-search:hover { color:var(--g700); }
+
+    .consulta-filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .filter-select {
+      padding:8px 12px; border:1.5px solid var(--g200);
+      border-radius:var(--radius-sm); font-size:13px;
+      font-family:var(--font); color:var(--g700); background:white;
+      appearance:none; cursor:pointer; outline:none;
+      transition:border-color var(--trans); min-width:180px;
+    }
+    .filter-select:focus { border-color:var(--primary); }
+    .result-info { font-size:13px; color:var(--g500); margin-left:auto; }
+    .result-info strong { color:var(--primary); }
+
+    /* TABS TIPO */
+    .tipo-tabs { display:flex; gap:6px; }
+    .tipo-tab {
+      display:flex; align-items:center; gap:7px;
+      padding:8px 16px; border-radius:20px;
+      font-size:13px; font-weight:600; cursor:pointer;
+      border:1.5px solid var(--g200); background:white;
+      color:var(--g500); font-family:var(--font);
+      transition:all var(--trans);
+    }
+    .tipo-tab:hover { border-color:var(--g300); color:var(--g800); }
+    .tipo-tab.ativo-todos { border-color:var(--primary); background:var(--primary); color:white; }
+    .tipo-tab.ativo-com   { border-color:var(--com);     background:var(--com-l);   color:var(--com); }
+    .tipo-tab.ativo-ext   { border-color:var(--ext);     background:var(--ext-l);   color:var(--ext); }
+    .tipo-tab .tab-count {
+      background:rgba(0,0,0,.1); border-radius:10px;
+      padding:1px 7px; font-size:11px; font-weight:800;
+    }
+    .tipo-tab.ativo-todos .tab-count { background:rgba(255,255,255,.25); }
+
+    /* GRID CONSULTA */
+    .contatos-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
+      gap:16px;
+    }
+
+    /* CARD CONSULTA */
+    .cc {
+      background:white; border-radius:var(--radius);
+      border:1.5px solid var(--g200);
+      transition:all .25s ease; cursor:pointer;
+      overflow:hidden; position:relative;
+    }
+    .cc:hover { box-shadow:var(--shadow-lg); transform:translateY(-3px); border-color:var(--g300); }
+    .cc-stripe { height:4px; }
+    .cc.tipo-com .cc-stripe { background:linear-gradient(90deg, var(--com), #38BDF8); }
+    .cc.tipo-ext .cc-stripe { background:linear-gradient(90deg, var(--ext), #A78BFA); }
+
+    .cc-body { padding:20px; }
+    .cc-top { display:flex; align-items:flex-start; gap:14px; margin-bottom:16px; }
+    .cc-av {
+      width:48px; height:48px; border-radius:12px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; font-weight:800; color:white;
+      flex-shrink:0; letter-spacing:-.5px;
+    }
+    .cc.tipo-com .cc-av { background:linear-gradient(135deg, var(--com), #0EA5E9); }
+    .cc.tipo-ext .cc-av { background:linear-gradient(135deg, var(--ext), #8B5CF6); }
+
+    .cc-info { flex:1; min-width:0; }
+    .cc-nome {
+      font-size:16px; font-weight:800; color:var(--g900);
+      line-height:1.3; word-break:break-word;
+      white-space:normal; overflow:visible;
+      margin-bottom:4px;
+    }
+    .cc-sub { font-size:13px; color:var(--g500); font-weight:500; }
+
+    .cc-badge {
+      padding:4px 10px; border-radius:20px;
+      font-size:11px; font-weight:700; flex-shrink:0;
+      letter-spacing:.3px; text-transform:uppercase;
+    }
+    .cc.tipo-com .cc-badge { background:var(--com-l); color:var(--com); }
+    .cc.tipo-ext .cc-badge { background:var(--ext-l); color:var(--ext); }
+    .badge-oculto {
+      background:var(--red-l) !important; color:var(--red) !important;
+      border:1px solid #FCA5A5 !important; padding:4px 8px; border-radius:20px;
+      font-size:11px; font-weight:700; flex-shrink:0; letter-spacing:.3px;
+      display:inline-flex; align-items:center; gap:4px;
+    }
+    .cc-btn.ocultar { background:var(--red-l); color:var(--red); }
+    .cc-btn.ocultar:hover { background:var(--red); color:white; }
+    .cc-btn.revelar { background:var(--green-l); color:var(--green); }
+    .cc-btn.revelar:hover { background:var(--green); color:white; }
+
+    .cc-details {
+      display:flex; flex-direction:column; gap:10px;
+      padding-top:14px; border-top:1px solid var(--g100);
+    }
+    .cc-det {
+      display:flex; align-items:center; gap:10px;
+      font-size:13.5px; color:var(--g700);
+    }
+    .cc-det i { width:18px; font-size:13px; flex-shrink:0; }
+    .cc-det span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+    .cc-det-label {
+      font-size:10px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; color:var(--g400); display:block; margin-bottom:1px;
+    }
+    .cc-det-val { font-size:13.5px; color:var(--g800); font-weight:600; }
+    .cc-codigo-badge {
+      display:inline-flex; align-items:center; gap:5px;
+      background:var(--g100); border:1px solid var(--g200);
+      border-radius:6px; padding:4px 10px;
+      font-size:13px; font-weight:700; color:var(--g700);
+    }
+
+    .cc-foot {
+      padding:12px 20px; border-top:1px solid var(--g100);
+      display:flex; gap:8px; background:var(--g50);
+    }
+    .cc-btn {
+      flex:1; padding:8px; border-radius:8px;
+      font-size:12px; font-weight:700; font-family:var(--font);
+      cursor:pointer; border:none; transition:all var(--trans);
+      display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    .cc-btn.view  { background:var(--primary-l); color:var(--primary); }
+    .cc-btn.edit  { background:var(--g100);       color:var(--g700);    }
+    .cc-btn.del   { background:var(--red-l);       color:var(--red);     }
+    .cc-btn.view:hover { background:var(--primary-m); }
+    .cc-btn.edit:hover { background:var(--g200); }
+    .cc-btn.del:hover  { background:var(--red); color:white; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      grid-column:1/-1; text-align:center; padding:80px 24px;
+      color:var(--g400);
+    }
+    .empty-state i { font-size:48px; display:block; margin-bottom:16px; opacity:.4; }
+    .empty-state h3 { font-size:18px; color:var(--g600); margin-bottom:8px; }
+    .empty-state p  { font-size:14px; }
+
+    /* PAGINAÇÃO */
+    .paginacao { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:28px; }
+    .pag-btn {
+      min-width:36px; height:36px; padding:0 10px;
+      border-radius:8px; border:1.5px solid var(--g200);
+      background:white; color:var(--g600); font-size:13px;
+      font-family:var(--font); font-weight:600; cursor:pointer;
+      transition:all var(--trans); display:flex; align-items:center; justify-content:center;
+    }
+    .pag-btn:hover:not(:disabled) { border-color:var(--primary); color:var(--primary); }
+    .pag-btn.ativo { background:var(--primary); border-color:var(--primary); color:white; }
+    .pag-btn:disabled { opacity:.35; cursor:not-allowed; }
+
+    /* ══════════════════════════════════
+       MODAL VER CONTATO
+    ══════════════════════════════════ */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      backdrop-filter:blur(4px); z-index:500;
+      display:flex; align-items:center; justify-content:center;
+      padding:20px; animation:fadeIn .2s ease;
+    }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal-box {
+      background:white; border-radius:var(--radius);
+      width:100%; max-width:600px;
+      height:90vh; max-height:90vh; overflow:hidden;
+      display:flex; flex-direction:column;
+      box-shadow:0 24px 80px rgba(0,0,0,.3);
+      animation:slideUp .25s ease;
+    }
+    .modal-box.xl { max-width:860px; height:92vh; max-height:92vh; }
+    .modal-box .modal-body { overflow-y:auto; flex:1; min-height:0; }
+    @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+    .modal-head {
+      padding:20px 24px; display:flex; align-items:center;
+      justify-content:space-between; border-bottom:1px solid var(--g200);
+      flex-shrink:0;
+    }
+    .modal-head h3 { font-size:17px; font-weight:800; color:var(--g900); display:flex; align-items:center; gap:10px; }
+    .modal-close {
+      width:32px; height:32px; border-radius:8px;
+      border:none; background:var(--g100); color:var(--g500);
+      cursor:pointer; font-size:14px; transition:all var(--trans);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .modal-close:hover { background:var(--red-l); color:var(--red); }
+    .modal-body { padding:24px; overflow-y:auto; flex:1; }
+    .modal-foot {
+      padding:16px 24px; border-top:1px solid var(--g200);
+      display:flex; justify-content:flex-end; gap:10px; flex-shrink:0;
+    }
+
+    /* VER DETALHES */
+    .ver-stripe { height:6px; border-radius:var(--radius) var(--radius) 0 0; }
+    .ver-stripe.com { background:linear-gradient(90deg, var(--com), #38BDF8); }
+    .ver-stripe.ext { background:linear-gradient(90deg, var(--ext), #A78BFA); }
+    .ver-header { display:flex; align-items:center; gap:16px; margin-bottom:24px; }
+    .ver-av {
+      width:64px; height:64px; border-radius:16px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:26px; font-weight:900; color:white; flex-shrink:0;
+    }
+    .ver-av.com { background:linear-gradient(135deg, var(--com), #0EA5E9); }
+    .ver-av.ext { background:linear-gradient(135deg, var(--ext), #8B5CF6); }
+    .ver-nome h3 { font-size:20px; font-weight:800; color:var(--g900); line-height:1.3; word-break:break-word; }
+    .ver-nome p  { color:var(--g500); font-size:13px; margin-top:4px; }
+
+    .ver-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .ver-field { background:var(--g50); border-radius:var(--radius-sm); padding:14px 16px; }
+    .ver-field.full { grid-column:1/-1; }
+    .ver-field label { font-size:11px; font-weight:700; color:var(--g400); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:6px; }
+    .ver-field p, .ver-field span { font-size:14px; color:var(--g800); font-weight:500; }
+    .ver-tags { display:flex; flex-wrap:wrap; gap:8px; }
+    .ver-tag {
+      display:inline-flex; align-items:center; gap:7px;
+      padding:6px 12px; background:white;
+      border:1px solid var(--g200); border-radius:20px;
+      font-size:12.5px; color:var(--g700);
+    }
+    .ver-tag i { font-size:11px; color:var(--g400); }
+    .status-ativo   { color:var(--green); font-weight:700; }
+    .status-inativo { color:var(--red);   font-weight:700; }
+
+    /* MODAL CONFIRMAR */
+    .modal-confirmar-ico {
+      width:56px; height:56px; border-radius:50%;
+      background:var(--red-l); color:var(--red);
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; margin:0 auto 16px;
+    }
+
+    /* ══════════════════════════════════
+       TOAST
+    ══════════════════════════════════ */
+    #toast-wrap { position:fixed; bottom:28px; right:28px; z-index:9999; display:flex; flex-direction:column; gap:10px; }
+    .toast {
+      display:flex; align-items:center; gap:12px;
+      padding:14px 18px; border-radius:var(--radius-sm);
+      font-size:14px; font-weight:500; color:white;
+      box-shadow:0 8px 24px rgba(0,0,0,.2);
+      animation:toastIn .3s ease;
+      min-width:280px; max-width:380px;
+    }
+    @keyframes toastIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+    .toast.ok    { background:#111827; border-left:4px solid var(--green); }
+    .toast.erro  { background:#111827; border-left:4px solid var(--red);   }
+    .toast.aviso { background:#111827; border-left:4px solid var(--amber); }
+    .toast i { font-size:16px; flex-shrink:0; }
+    .toast.ok    i { color:var(--green); }
+    .toast.erro  i { color:var(--red);   }
+    .toast.aviso i { color:var(--amber); }
+
+    /* LOADING */
+    #loading-overlay {
+      position:fixed; inset:0; background:rgba(255,255,255,.75);
+      backdrop-filter:blur(4px); z-index:9998;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .loading-spin {
+      width:44px; height:44px; border:3px solid var(--g200);
+      border-top-color:var(--primary); border-radius:50%;
+      animation:spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* COPIAR TAG */
+    .ver-tag { cursor:pointer; transition:all var(--trans); }
+    .ver-tag:hover { background:var(--primary-l); border-color:var(--primary-m); color:var(--primary); }
+    .ver-tag:hover i.orig-ico { display:none; }
+    .ver-tag .copy-ico { display:none; }
+    .ver-tag:hover .copy-ico { display:inline; font-size:11px; }
+
+    /* ══════════════════════════════════
+       ABAS TEXTO (comunicação / diligência)
+    ══════════════════════════════════ */
+    .txt-tabs { display:flex; gap:4px; margin:20px 0 0; border-bottom:2px solid var(--g200); }
+    .txt-tab {
+      display:flex; align-items:center; gap:7px;
+      padding:10px 18px; border-radius:8px 8px 0 0;
+      font-size:13px; font-weight:700; font-family:var(--font);
+      cursor:pointer; border:none; background:transparent;
+      color:var(--g500); transition:all var(--trans);
+      margin-bottom:-2px; border-bottom:2px solid transparent;
+    }
+    .txt-tab:hover { color:var(--g800); background:var(--g50); }
+    .txt-tab.ativo-com  { color:var(--com);  border-bottom-color:var(--com);  background:var(--com-l); }
+    .txt-tab.ativo-dilig { color:var(--ext); border-bottom-color:var(--ext); background:var(--ext-l); }
+
+    .txt-panel { display:none; padding:16px 0 0; }
+    .txt-panel.ativo { display:block; }
+
+    .txt-area-wrap { position:relative; }
+    .txt-area-wrap textarea {
+      width:100%; min-height:160px; padding:14px 16px;
+      border:1.5px solid var(--g200); border-radius:var(--radius-sm);
+      font-size:13.5px; font-family:var(--font); color:var(--g900);
+      background:var(--g50); line-height:1.7; resize:vertical;
+      outline:none; transition:border-color var(--trans);
+    }
+    .txt-area-wrap textarea:focus { border-color:var(--primary); background:white; box-shadow:0 0 0 3px rgba(29,78,216,.08); }
+    .txt-area-wrap textarea::placeholder { color:var(--g400); }
+
+    .txt-copy-row {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-top:10px; flex-wrap:wrap; gap:8px;
+    }
+    .txt-copy-hint { font-size:12px; color:var(--g400); }
+    .btn-txt-copy {
+      display:inline-flex; align-items:center; gap:7px;
+      padding:8px 18px; border-radius:var(--radius-sm);
+      font-size:13px; font-weight:700; font-family:var(--font);
+      cursor:pointer; border:none; transition:all var(--trans);
+    }
+    .btn-txt-copy.com  { background:var(--com-l);  color:var(--com);  }
+    .btn-txt-copy.com:hover  { background:var(--com);  color:white; }
+    .btn-txt-copy.dilig { background:var(--ext-l); color:var(--ext); }
+    .btn-txt-copy.dilig:hover { background:var(--ext); color:white; }
+    .btn-txt-save {
+      display:inline-flex; align-items:center; gap:7px;
+      padding:8px 14px; border-radius:var(--radius-sm);
+      font-size:12px; font-weight:700; font-family:var(--font);
+      cursor:pointer; border:1.5px solid var(--g200);
+      background:white; color:var(--g600); transition:all var(--trans);
+    }
+    .btn-txt-save:hover { border-color:var(--green); color:var(--green); background:var(--green-l); }
+
+    /* ORDENAÇÃO */
+    .sort-select {
+      padding:8px 12px; border:1.5px solid var(--g200);
+      border-radius:var(--radius-sm); font-size:13px;
+      font-family:var(--font); color:var(--g700); background:white;
+      appearance:none; cursor:pointer; outline:none;
+      transition:border-color var(--trans); min-width:200px;
+    }
+    .sort-select:focus { border-color:var(--primary); }
+
+    /* BOTÕES EXPORTAR */
+    .btn-export {
+      display:inline-flex; align-items:center; gap:7px;
+      padding:9px 16px; border-radius:var(--radius-sm);
+      font-size:13px; font-weight:700; font-family:var(--font);
+      cursor:pointer; border:1.5px solid var(--g200);
+      background:white; color:var(--g700); transition:all var(--trans);
+    }
+    .btn-export.excel { border-color:#16a34a44; color:#16a34a; background:#f0fdf4; }
+    .btn-export.excel:hover { background:#dcfce7; border-color:#16a34a; }
+    .btn-export.pdf   { border-color:#dc262644; color:#dc2626; background:#fef2f2; }
+    .btn-export.pdf:hover { background:#fee2e2; border-color:#dc2626; }
+
+    /* ══════════════════════════════════
+       TELEFONES ÚTEIS
+    ══════════════════════════════════ */
+    .tel-toolbar {
+      background:white; border-radius:var(--radius);
+      border:1px solid var(--g200); padding:20px 24px;
+      box-shadow:var(--shadow); margin-bottom:20px;
+    }
+    .tel-search-row { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+    .tel-filtros { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+    .tel-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
+      gap:16px;
+    }
+    .tc {
+      background:white; border-radius:var(--radius);
+      border:1.5px solid var(--g200);
+      transition:all .25s ease;
+      overflow:hidden; position:relative;
+    }
+    .tc:hover { box-shadow:var(--shadow-lg); transform:translateY(-3px); border-color:var(--g300); }
+    .tc-stripe { height:4px; }
+    .tc.origem-com .tc-stripe { background:linear-gradient(90deg, var(--com), #38BDF8); }
+    .tc.origem-ext .tc-stripe { background:linear-gradient(90deg, var(--ext), #A78BFA); }
+    .tc.origem-man .tc-stripe { background:linear-gradient(90deg, var(--green), #34D399); }
+
+    .tc-body { padding:18px 20px; }
+    .tc-top { display:flex; align-items:flex-start; gap:12px; margin-bottom:14px; }
+    .tc-av {
+      width:44px; height:44px; border-radius:11px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:17px; font-weight:800; color:white;
+      flex-shrink:0; letter-spacing:-.5px;
+    }
+    .tc.origem-com .tc-av { background:linear-gradient(135deg, var(--com), #0EA5E9); }
+    .tc.origem-ext .tc-av { background:linear-gradient(135deg, var(--ext), #8B5CF6); }
+    .tc.origem-man .tc-av { background:linear-gradient(135deg, var(--green), #059669); }
+
+    .tc-info { flex:1; min-width:0; }
+    .tc-nome { font-size:15px; font-weight:800; color:var(--g900); line-height:1.3; word-break:break-word; margin-bottom:3px; }
+    .tc-unidade { font-size:12px; color:var(--g500); font-weight:500; }
+    .tc-badge {
+      padding:3px 9px; border-radius:20px;
+      font-size:10px; font-weight:700; flex-shrink:0;
+      letter-spacing:.3px; text-transform:uppercase; height:fit-content;
+    }
+    .tc.origem-com .tc-badge { background:var(--com-l); color:var(--com); }
+    .tc.origem-ext .tc-badge { background:var(--ext-l); color:var(--ext); }
+    .tc.origem-man .tc-badge { background:var(--green-l); color:var(--green); }
+
+    .tc-contatos { display:flex; flex-direction:column; gap:7px; }
+    .tc-linha {
+      display:flex; align-items:center; gap:9px;
+      font-size:13px; color:var(--g700);
+    }
+    .tc-linha i { width:16px; font-size:12px; flex-shrink:0; color:var(--g400); }
+    .tc-linha span { font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tc-linha.clickable { cursor:pointer; border-radius:6px; padding:4px 6px; transition:background var(--trans); }
+    .tc-linha.clickable:hover { background:var(--primary-l); color:var(--primary); }
+    .tc-linha.clickable:hover i { color:var(--primary); }
+
+    .tc-foot {
+      padding:10px 20px; border-top:1px solid var(--g100);
+      display:flex; gap:8px; background:var(--g50);
+    }
+    .tc-btn {
+      flex:1; padding:7px; border-radius:7px;
+      font-size:12px; font-weight:700; font-family:var(--font);
+      cursor:pointer; border:none; transition:all var(--trans);
+      display:flex; align-items:center; justify-content:center; gap:5px;
+    }
+    .tc-btn.edit { background:var(--g100); color:var(--g700); }
+    .tc-btn.del  { background:var(--red-l); color:var(--red); }
+    .tc-btn.edit:hover { background:var(--g200); }
+    .tc-btn.del:hover  { background:var(--red); color:white; }
+
+    /* MODAL TELEFONE */
+    .tel-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .tel-form-grid .full { grid-column:1/-1; }
+    @media(max-width:520px){ .tel-form-grid { grid-template-columns:1fr; } .tel-form-grid .full { grid-column:1; } }
+
+    /* origem chip no card inicial */
+    .card-tel .card-ico { background:rgba(16,185,129,.3); color:#34D399; }
+    .inicio-card.card-tel::before { background:linear-gradient(135deg,rgba(16,185,129,.4),rgba(16,185,129,.1)); }
+
+    /* RESPONSIVE */
+    @media(max-width:768px) {
+      .tela { padding:20px 16px; }
+      .topbar { padding:0 16px; }
+      .topbar-nav { gap:4px; }
+      .topbar-btn span { display:none; }
+      .inicio-titulo { font-size:32px; }
+      .inicio-cards { gap:16px; }
+      .inicio-card { width:100%; max-width:340px; }
+      .consulta-search-row { flex-wrap:wrap; }
+      .tipo-tabs { flex-wrap:wrap; }
+      .ver-grid { grid-template-columns:1fr; }
+      .tel-search-row { flex-wrap:wrap; }
+      .tel-grid { grid-template-columns:1fr; }
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <!-- TOPO DE NAVEGAÇÃO -->
-    <div class="topbar">
-      <div class="topbar-brand" onclick="navegarPara('tela-inicio')">
-        <div class="topbar-logo"><i class="fa-solid fa-building-columns"></i></div>
-        <div class="topbar-brand-text">
-          <strong>SecExecPres</strong>
-          <span>Gestão de Contatos</span>
-        </div>
-      </div>
-      <div class="topbar-nav">
-        <button class="topbar-btn ativo" id="nav-inicio" onclick="navegarPara('tela-inicio')"><i class="fa-solid fa-house"></i> Início</button>
-        <button class="topbar-btn" id="nav-consultar" onclick="navegarPara('tela-contatos')"><i class="fa-solid fa-search"></i> Consultar</button>
-        <button class="topbar-btn" id="nav-enderecos" onclick="navegarPara('tela-enderecos')"><i class="fa-solid fa-envelope-open-text"></i> Endereçamentos</button>
-        <button class="topbar-btn" id="nav-telefones" onclick="navegarPara('tela-telefones')"><i class="fa-solid fa-phone"></i> Tel. Úteis</button>
-        <div class="topbar-divider"></div>
-        <div class="topbar-user" onclick="alternarPerfilAdmin()" title="Clique para alternar o perfil de acesso">
-          <div class="user-av" id="user-av">AD</div>
-          <span id="user-name">Administrador</span>
-          <span class="user-badge admin" id="user-role-badge">ADMIN</span>
-        </div>
-      </div>
+
+<!-- MODAL: LOGIN ADM -->
+<div id="modal-login-adm" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width: 400px; height: auto;">
+    <div class="modal-head">
+      <h3><i class="fas fa-shield-halved"></i> Login de Administrador</h3>
+      <button class="modal-close" onclick="fecharModal('modal-login-adm')"><i class="fas fa-times"></i></button>
     </div>
-
-    <!-- WRAPPER DAS TELAS -->
-    <div class="app-wrap">
-      
-      <!-- TELA INICIAL -->
-      <div id="tela-inicio" class="tela ativa">
-        <div class="inicio-header">
-          <div class="inicio-badge"><i class="fa-solid fa-building-columns"></i> SecExecPres</div>
-          <h1 class="inicio-titulo">Sistema de <span>Contatos</span><br>SecExecPres</h1>
-          <p class="inicio-sub">Gerencie comunicações internas, contatos externos e modelos de endereçamento da Secretaria Executiva da Presidência.</p>
+    <div class="modal-body">
+      <form class="login-form" onsubmit="loginUser(event)">
+        <div class="fgroup" style="margin-bottom: 16px;">
+          <label for="login-email">E-mail</label>
+          <input type="email" id="login-email" required placeholder="seu.email@tjgo.jus.br" />
         </div>
-        
-        <div class="inicio-cards">
-          <div class="inicio-card" onclick="navegarPara('tela-contatos', 'interna')">
-            <div class="card-ico com"><i class="fa-solid fa-file-lines"></i></div>
-            <h3>Comunicações Internas</h3>
-            <p>Consulte unidades internas, diretores e responsáveis por encaminhamentos.</p>
-            <div class="card-arrow"><i class="fa-solid fa-arrow-right"></i></div>
-          </div>
-
-          <div class="inicio-card" onclick="navegarPara('tela-contatos', 'externa')">
-            <div class="card-ico ext"><i class="fa-solid fa-globe"></i></div>
-            <h3>Contatos Externos</h3>
-            <p>Consulte órgãos, instituições e entidades externas cadastradas.</p>
-            <div class="card-arrow"><i class="fa-solid fa-arrow-right"></i></div>
-          </div>
-
-          <div class="inicio-card" onclick="navegarPara('tela-telefones')">
-            <div class="card-ico tel"><i class="fa-solid fa-phone-volume"></i></div>
-            <h3>Telefones Úteis</h3>
-            <p>Lista rápida de servidores com telefone fixo, celular e e-mail de contato.</p>
-            <div class="card-arrow"><i class="fa-solid fa-arrow-right"></i></div>
-          </div>
-
-          <div class="inicio-card" onclick="navegarPara('tela-enderecos')">
-            <div class="card-ico end"><i class="fa-solid fa-envelope-open-text"></i></div>
-            <h3>Endereçamentos</h3>
-            <p>Cabeçalhos padronizados para Ofícios Simples e Circulares com cópia rápida.</p>
-            <div class="card-arrow"><i class="fa-solid fa-arrow-right"></i></div>
-          </div>
+        <div class="fgroup" style="margin-bottom: 24px;">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" required placeholder="Digite sua senha" />
         </div>
-      </div>
-
-      <!-- TELA CONSULTA DE CONTATOS -->
-      <div id="tela-contatos" class="tela">
-        <div class="tela-header">
-          <div class="tela-header-left">
-            <button class="btn-voltar" onclick="navegarPara('tela-inicio')"><i class="fa-solid fa-arrow-left"></i></button>
-            <div class="tela-titulo">
-              <h2>Consulta de Contatos</h2>
-              <p>Gerenciamento de contatos internos e externos</p>
-            </div>
-          </div>
-        </div>
-        <div class="toolbar-box">
-          <div class="search-box">
-            <i class="fa-solid fa-search"></i>
-            <input type="text" placeholder="Buscar por nome, unidade ou cargo...">
-          </div>
-        </div>
-        <div style="text-align:center; padding:40px; color:var(--g500);">
-          <i class="fa-solid fa-address-book" style="font-size:40px; margin-bottom:12px;"></i>
-          <p>Módulo de consulta de contatos (unidades internas e externas).</p>
-        </div>
-      </div>
-
-      <!-- TELA MÓDULO DE ENDEREÇAMENTOS -->
-      <div id="tela-enderecos" class="tela">
-        <div class="tela-header">
-          <div class="tela-header-left">
-            <button class="btn-voltar" onclick="navegarPara('tela-inicio')"><i class="fa-solid fa-arrow-left"></i></button>
-            <div class="tela-titulo">
-              <h2>Endereçamentos para Ofícios <span class="db-sync-indicator"><i class="fa-solid fa-wifi"></i> Banco Online</span></h2>
-              <p>Cabeçalhos oficiais sincronizados em tempo real para todos os usuários</p>
-            </div>
-          </div>
-          <button class="btn-pri adm-only" onclick="navegarPara('tela-cad-endereco')"><i class="fa-solid fa-plus"></i> Novo Endereçamento</button>
-        </div>
-
-        <div class="toolbar-box">
-          <div class="search-row">
-            <div class="search-box">
-              <i class="fa-solid fa-search"></i>
-              <input type="text" id="input-busca-end" placeholder="Buscar autoridade, cargo, órgão ou texto..." oninput="renderizarEnderecos()">
-            </div>
-          </div>
-          <div class="filter-tabs">
-            <button class="filter-tab ativo" id="tab-end-todos" onclick="filtrarTipoEnd('todos')">Todos</button>
-            <button class="filter-tab" id="tab-end-simples" onclick="filtrarTipoEnd('simples')"><i class="fa-solid fa-user"></i> Ofício Simples</button>
-            <button class="filter-tab" id="tab-end-circular" onclick="filtrarTipoEnd('circular')"><i class="fa-solid fa-users"></i> Ofício Circular</button>
-          </div>
-        </div>
-
-        <div class="enderecos-grid" id="container-enderecos"></div>
-      </div>
-
-      <!-- TELA CADASTRO / EDIÇÃO DE ENDEREÇAMENTO (SOMENTE ADM) -->
-      <div id="tela-cad-endereco" class="tela">
-        <div class="tela-header">
-          <div class="tela-header-left">
-            <button class="btn-voltar" onclick="navegarPara('tela-enderecos')"><i class="fa-solid fa-arrow-left"></i></button>
-            <div class="tela-titulo">
-              <h2 id="form-end-titulo">Novo Endereçamento</h2>
-              <p>Cadastre ou edite um modelo oficial de endereçamento para expedição de ofício</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-card">
-          <form id="form-endereco" onsubmit="salvarEndereco(event)">
-            <input type="hidden" id="end-id">
-            
-            <div class="fgroup">
-              <label>Tipo de Ofício *</label>
-              <select id="end-tipo" onchange="alternarCamposTipoForm()" required>
-                <option value="simples">Ofício Simples (Autoridade Específica)</option>
-                <option value="circular">Ofício Circular (Coletivo / Grupo)</option>
-              </select>
-            </div>
-
-            <!-- CAMPOS PARA OFÍCIO SIMPLES -->
-            <div id="campos-simples">
-              <div class="fgroup"><label>Vocativo / Tratamento *</label><input type="text" id="end-vocativo" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreview()" required></div>
-              <div class="fgroup"><label>Nome da Autoridade *</label><input type="text" id="end-nome" placeholder="Ex: Desembargador FABIANO ABEL DE ARAGÃO FERNANDES" oninput="atualizarPreview()" required></div>
-              <div class="fgroup"><label>Cargo / Função *</label><input type="text" id="end-cargo" placeholder="Ex: 1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()" required></div>
-              <div class="fgroup"><label>Órgão / Instituição <span class="opt">(Opcional)</span></label><input type="text" id="end-orgao" placeholder="Ex: Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()"></div>
-              <div class="fgroup"><label>Expressão Final / Local *</label><input type="text" id="end-local" placeholder="Ex: N E S T A" oninput="atualizarPreview()" required></div>
-            </div>
-
-            <!-- CAMPOS PARA OFÍCIO CIRCULAR -->
-            <div id="campos-circular" class="hidden">
-              <div class="fgroup">
-                <label>Texto Completo do Endereçamento Coletivo *</label>
-                <textarea id="end-texto-circular" rows="4" placeholder="Ex: Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás" oninput="atualizarPreview()"></textarea>
-              </div>
-            </div>
-
-            <div class="fgroup">
-              <label><i class="fa-solid fa-eye"></i> Pré-visualização</label>
-              <div class="preview-box" id="end-preview">Preencha os campos acima para visualizar o cabeçalho...</div>
-            </div>
-
-            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
-              <button type="button" class="btn-sec" onclick="navegarPara('tela-enderecos')">Cancelar</button>
-              <button type="submit" class="btn-pri"><i class="fa-solid fa-save"></i> Salvar Endereçamento</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
+        <button type="submit" class="btn-login" id="btn-login-submit" style="width:100%; padding:11px; background:var(--primary); color:white; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; font-family:var(--font); cursor:pointer;">Entrar como ADM</button>
+      </form>
+      <div id="db-status" style="margin-top:12px; font-size:12px; color:var(--g500); text-align:center;">Aguardando login...</div>
     </div>
   </div>
+</div>
 
-  <div id="toast"><i class="fa-solid fa-check-circle" style="color:#10B981;"></i> <span id="toast-msg">Mensagem</span></div>
+<!-- APP SHELL -->
+<div id="app-shell">
 
-  <script>
-    // CONFIGURAÇÃO DO BANCO DE DADOS FIREBASE EM NUVEM EM TEMPO REAL
-    const firebaseConfig = {
-      databaseURL: "https://secexecpres-contatos-default-rtdb.firebaseio.com/"
-    };
-    
-    // Inicializa o Firebase Database
-    let db;
-    try {
-      firebase.initializeApp(firebaseConfig);
-      db = firebase.database().ref('enderecos');
-    } catch(e) {
-      console.log('Modo offline / fallback ativo');
-    }
+  <!-- TOPBAR -->
+  <nav class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo"><i class="fas fa-landmark"></i></div>
+      <div class="topbar-brand-text">
+        <strong>SecExecPres</strong>
+        <span>Gestão de Contatos</span>
+      </div>
+    </div>
+    <div class="topbar-nav">
+      <button class="topbar-btn ativo" id="btn-nav-inicio" onclick="irPara('inicio')">
+        <i class="fas fa-home"></i><span>Início</span>
+      </button>
+      <button class="topbar-btn" id="btn-nav-consulta" onclick="irPara('consulta')">
+        <i class="fas fa-search"></i><span>Consultar</span>
+      </button>
+      <button class="topbar-btn" id="btn-nav-telefones" onclick="irPara('telefones')">
+        <i class="fas fa-phone-volume"></i><span>Tel. Úteis</span>
+      </button>
+      <button class="topbar-btn" id="btn-nav-enderecos" onclick="irPara('enderecos')">
+        <i class="fas fa-envelope-open-text"></i><span>Endereçamentos</span>
+      </button>
+      <button class="topbar-btn hidden" id="btn-nav-backup-audit" onclick="irPara('backup-audit')">
+        <i class="fas fa-shield-halved"></i><span>Admin</span>
+      </button>
+      <div class="topbar-divider"></div>
+      <button class="topbar-btn topbar-btn-new com" id="btn-nav-cad-com" onclick="irParaCadastro('COMUNICACAO')">
+        <i class="fas fa-plus"></i><span>Nova Com/Dilig.</span>
+      </button>
+      <button class="topbar-btn topbar-btn-new ext" id="btn-nav-cad-ext" onclick="irParaCadastro('EXTERNO')">
+        <i class="fas fa-plus"></i><span>Novo Externo</span>
+      </button>
+      <div class="topbar-divider"></div>
+      <div class="topbar-user" onclick="if(checkPermission('admin')) abrirModalAlterarSenha();">
+        <img id="user-display-avatar" class="user-av" src="https://ui-avatars.com/api/?name=Visitante&background=64748B&color=fff&bold=true" alt="Avatar">
+        <div class="user-info">
+          <span id="user-display-name">Visitante</span>
+          <span id="user-display-role">Público</span>
+        </div>
+        <button class="topbar-btn" id="btn-login-adm" onclick="event.stopPropagation(); abrirModal('modal-login-adm')" title="Entrar no Modo Administrador" style="background:var(--primary); color:white; font-size:12px; font-weight:700; border-radius:6px; padding:6px 12px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+          <i class="fas fa-key"></i> <span>Entrar ADM</span>
+        </button>
+        <button class="topbar-btn logout-btn hidden" id="btn-logout-adm" onclick="event.stopPropagation(); logoutUser()" title="Sair do Modo Admin">
+          <i class="fas fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
 
-    const ENDERECOS_PADRAO = [
-      {
-        id: 101,
-        tipo: 'simples',
-        vocativo: 'A Sua Excelência o Senhor',
-        nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
-        cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
-        orgao: '',
-        local: 'N E S T A'
-      },
-      {
-        id: 102,
-        tipo: 'circular',
-        textoCircular: 'Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás'
-      }
-    ];
+  <div class="app-wrap">
 
-    let estado = {
-      ehAdmin: true,
-      filtroTipo: 'todos',
-      enderecos: []
-    };
+  <!-- ══ TELA INICIAL ══ -->
+  <section id="tela-inicio" class="tela ativa">
+    <div class="inicio-header">
+      <div class="inicio-badge"><i class="fas fa-shield-halved"></i> SecExecPres</div>
+      <h1 class="inicio-titulo">Sistema de <span>Contatos</span><br>SecExecPres</h1>
+      <p class="inicio-sub">Gerencie comunicações internas e contatos externos da Secretaria Executiva da Presidência</p>
+    </div>
+    <div class="inicio-cards">
+      <div class="inicio-card card-com" onclick="irPara('consulta'); setFiltroTipo('COMUNICACAO')">
+        <div class="card-ico"><i class="fas fa-file-lines"></i></div>
+        <h3>Comunicações Internas</h3>
+        <p>Consulte unidades internas, diretores e responsáveis por encaminhamentos</p>
+        <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+      </div>
+      <div class="inicio-card card-ext" onclick="irPara('consulta'); setFiltroTipo('EXTERNO')">
+        <div class="card-ico"><i class="fas fa-globe"></i></div>
+        <h3>Contatos Externos</h3>
+        <p>Consulte órgãos, instituições e entidades externas cadastradas</p>
+        <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+      </div>
+      <div class="inicio-card card-tel" onclick="irPara('telefones')">
+        <div class="card-ico"><i class="fas fa-phone-volume"></i></div>
+        <h3>Telefones Úteis</h3>
+        <p>Lista rápida de servidores com telefone fixo, celular e e-mail de contato</p>
+        <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+      </div>
+      <div class="inicio-card card-ext" onclick="irPara('enderecos')">
+        <div class="card-ico" style="background:rgba(245,158,11,.3); color:#FBBF24;"><i class="fas fa-envelope-open-text"></i></div>
+        <h3>Endereçamentos</h3>
+        <p>Cabeçalhos padronizados para Ofícios Simples e Circulares com cópia rápida</p>
+        <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+      </div>
+    </div>
+  </section>
 
-    function conectarBancoNuvem() {
-      if (db) {
-        db.on('value', (snapshot) => {
-          const dados = snapshot.val();
-          if (dados) {
-            estado.enderecos = Array.isArray(dados) ? dados : Object.values(dados);
-          } else {
-            estado.enderecos = ENDERECOS_PADRAO;
-            db.set(ENDERECOS_PADRAO);
-          }
-          renderizarEnderecos();
-        }, (error) => {
-          carregarFallbackLocal();
-        });
-      } else {
-        carregarFallbackLocal();
-      }
-    }
+  <!-- ══ TELA CADASTRO ══ -->
+  <section id="tela-cadastro" class="tela">
+    <div class="tela-header">
+      <div class="tela-header-left">
+        <button class="btn-voltar" onclick="contatoEditandoId=null; limparFormulario(); irPara('inicio')"><i class="fas fa-arrow-left"></i></button>
+        <div class="tela-titulo">
+          <h2 id="cad-titulo">Novo Cadastro</h2>
+          <p id="cad-subtitulo">Preencha os campos abaixo</p>
+        </div>
+      </div>
+    </div>
 
-    function carregarFallbackLocal() {
-      const salvos = localStorage.getItem('secexecpres_enderecos');
-      if (salvos) {
-        try { estado.enderecos = JSON.parse(salvos); } catch (e) { estado.enderecos = ENDERECOS_PADRAO; }
-      } else {
-        estado.enderecos = ENDERECOS_PADRAO;
-      }
-      renderizarEnderecos();
-    }
+    <div class="form-card">
+      <input type="hidden" id="c-tipo" value="COMUNICACAO"/>
+      <input type="hidden" id="c-id"/>
 
-    function salvarDadosNuvem() {
-      if (db) {
-        db.set(estado.enderecos);
-      }
-      localStorage.setItem('secexecpres_enderecos', JSON.stringify(estado.enderecos));
-    }
-
-    document.addEventListener('DOMContentLoaded', () => { 
-      conectarBancoNuvem();
-      atualizarControleAcesso();
-    });
-
-    function alternarPerfilAdmin() {
-      estado.ehAdmin = !estado.ehAdmin;
-      atualizarControleAcesso();
-      renderizarEnderecos();
-      exibirToast(estado.ehAdmin ? 'Perfil alterado para ADMINISTRADOR' : 'Perfil alterado para CONSULTA (Visitante)');
-    }
-
-    function atualizarControleAcesso() {
-      const btnsAdm = document.querySelectorAll('.adm-only');
-      const badgeRole = document.getElementById('user-role-badge');
-      const userName = document.getElementById('user-name');
-      const userAv = document.getElementById('user-av');
-
-      if (estado.ehAdmin) {
-        btnsAdm.forEach(el => el.classList.remove('hidden'));
-        badgeRole.innerText = 'ADMIN';
-        badgeRole.className = 'user-badge admin';
-        userName.innerText = 'Administrador';
-        userAv.innerText = 'AD';
-      } else {
-        btnsAdm.forEach(el => el.classList.add('hidden'));
-        badgeRole.innerText = 'CONSULTA';
-        badgeRole.className = 'user-badge user';
-        userName.innerText = 'Usuário Consulta';
-        userAv.innerText = 'US';
-      }
-    }
-
-    function navegarPara(idTela, filtro = null) {
-      if (idTela === 'tela-cad-endereco' && !estado.ehAdmin) {
-        exibirToast('Acesso restrito a Administradores.');
-        return;
-      }
-
-      document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
-      document.getElementById(idTela).classList.add('ativa');
-
-      document.querySelectorAll('.topbar-btn').forEach(b => b.classList.remove('ativo'));
-      if (idTela === 'tela-inicio') document.getElementById('nav-inicio').classList.add('ativo');
-      if (idTela === 'tela-contatos') document.getElementById('nav-consultar').classList.add('ativo');
-      if (idTela === 'tela-enderecos') document.getElementById('nav-enderecos').classList.add('ativo');
-      if (idTela === 'tela-telefones') document.getElementById('nav-telefones').classList.add('ativo');
-
-      if (idTela === 'tela-enderecos') renderizarEnderecos();
-      if (idTela === 'tela-cad-endereco' && !document.getElementById('end-id').value) {
-        limparFormulario();
-      }
-    }
-
-    function limparFormulario() {
-      document.getElementById('form-end-titulo').innerText = 'Novo Endereçamento';
-      document.getElementById('form-endereco').reset();
-      document.getElementById('end-id').value = '';
-      alternarCamposTipoForm();
-    }
-
-    function filtrarTipoEnd(tipo) {
-      estado.filtroTipo = tipo;
-      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('ativo'));
-      document.getElementById(`tab-end-${tipo}`).classList.add('ativo');
-      renderizarEnderecos();
-    }
-
-    function montarTextoSimples(voc, nome, cargo, orgao, local) {
-      let linhas = [];
-      if (voc) linhas.push(voc);
-      if (nome) linhas.push(nome);
-      if (cargo) linhas.push(cargo);
-      if (orgao && orgao.trim() !== '') linhas.push(orgao);
-      if (local) linhas.push(local);
-      return linhas.join('\n');
-    }
-
-    function renderizarEnderecos() {
-      const container = document.getElementById('container-enderecos');
-      const busca = (document.getElementById('input-busca-end')?.value || '').toLowerCase();
-
-      const filtrados = estado.enderecos.filter(item => {
-        const atendeTipo = estado.filtroTipo === 'todos' || item.tipo === estado.filtroTipo;
-        let textoBusca = item.tipo === 'simples' ? `${item.vocativo} ${item.nome} ${item.cargo} ${item.orgao || ''} ${item.local}` : `${item.textoCircular}`;
-        return atendeTipo && textoBusca.toLowerCase().includes(busca);
-      });
-
-      if (filtrados.length === 0) {
-        container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:48px; color:var(--g500);"><p>Nenhum endereçamento encontrado.</p></div>`;
-        return;
-      }
-
-      container.innerHTML = filtrados.map(item => {
-        const tituloCard = item.tipo === 'simples' ? item.cargo : 'Ofício Circular';
-        const texto = item.tipo === 'simples' ? montarTextoSimples(item.vocativo, item.nome, item.cargo, item.orgao, item.local) : item.textoCircular;
-        return `
-          <div class="end-card">
-            <div class="end-card-header">
-              <strong>${tituloCard}</strong>
-              <span class="end-badge ${item.tipo}">${item.tipo === 'simples' ? 'Simples' : 'Circular'}</span>
+      <!-- CAMPOS COMUNICAÇÃO -->
+      <div id="campos-com">
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-building" style="color:var(--com)"></i> Identificação da Unidade</div>
+          <div class="form-row-2" style="gap:16px;margin-bottom:16px">
+            <div class="fgroup">
+              <label>Código <span class="req">*</span></label>
+              <input type="text" id="c-codigo" placeholder="Ex: 965"/>
+              <span class="field-err" id="err-c-codigo"></span>
             </div>
-            <div class="end-card-body">${texto}</div>
-            <div class="end-card-actions">
-              <button class="btn-copy" onclick="copiarTexto(\`${escapeHtml(texto)}\`)"><i class="fa-solid fa-copy"></i> Copiar</button>
-              ${estado.ehAdmin ? `
-                <button class="btn-action-sm edit" onclick="editarEndereco(${item.id})"><i class="fa-solid fa-pen"></i> Editar</button>
-                <button class="btn-action-sm del" onclick="excluirEndereco(${item.id})"><i class="fa-solid fa-trash"></i> Excluir</button>
-              ` : ''}
+            <div class="fgroup">
+              <label>Unidade <span class="req">*</span></label>
+              <input type="text" id="c-unidade" placeholder="Ex: Assessoria Jurídica Judicial da Presidência"/>
+              <span class="field-err" id="err-c-unidade"></span>
             </div>
           </div>
-        `;
-      }).join('');
-    }
+          <div class="form-row-2">
+            <div class="fgroup">
+              <label>Diretor / Endereçar Para</label>
+              <input type="text" id="c-diretor" placeholder="Nome do diretor ou responsável"/>
+            </div>
+            <div class="fgroup">
+              <label>Encaminhar a Comunicação Para</label>
+              <input type="text" id="c-encaminhar" placeholder="Nome ou instrução de encaminhamento"/>
+            </div>
+          </div>
+        </div>
 
-    function editarEndereco(id) {
-      if (!estado.ehAdmin) {
-        exibirToast('Apenas administradores podem editar.');
-        return;
-      }
-      const item = estado.enderecos.find(i => i.id === id);
-      if (!item) return;
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-envelope" style="color:var(--com)"></i> E-mails
+            <button type="button" class="btn-add-field" onclick="addEmail()"><i class="fas fa-plus"></i> Adicionar</button>
+          </div>
+          <div id="emails-container">
+            <div class="dyn-field">
+              <input type="email" class="email-inp" placeholder="email@tjgo.jus.br"/>
+              <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
 
-      document.getElementById('form-end-titulo').innerText = 'Editar Endereçamento';
-      document.getElementById('end-id').value = item.id;
-      document.getElementById('end-tipo').value = item.tipo;
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-phone" style="color:var(--com)"></i> Telefones
+            <button type="button" class="btn-add-field" onclick="addTelefone()"><i class="fas fa-plus"></i> Adicionar</button>
+          </div>
+          <div id="telefones-container">
+            <div class="dyn-field">
+              <input type="text" class="tel-inp" placeholder="(62) 3216-0000"/>
+              <select class="tel-tipo">
+                <option value="fixo">Fixo</option>
+                <option value="ramal">Ramal</option>
+                <option value="celular">Celular</option>
+              </select>
+              <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
 
-      alternarCamposTipoForm();
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-note-sticky" style="color:var(--com)"></i> Observações</div>
+          <div class="fgroup">
+            <textarea id="c-obs-com" rows="3" placeholder="Observações, instruções especiais, conferir com..."></textarea>
+          </div>
+        </div>
+      </div>
 
-      if (item.tipo === 'simples') {
-        document.getElementById('end-vocativo').value = item.vocativo || '';
-        document.getElementById('end-nome').value = item.nome || '';
-        document.getElementById('end-cargo').value = item.cargo || '';
-        document.getElementById('end-orgao').value = item.orgao || '';
-        document.getElementById('end-local').value = item.local || '';
-      } else {
-        document.getElementById('end-texto-circular').value = item.textoCircular || '';
-      }
+      <!-- CAMPOS EXTERNO -->
+      <div id="campos-ext" class="hidden">
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-user" style="color:var(--ext)"></i> Identificação do Contato</div>
+          <div class="form-row-3" style="margin-bottom:16px">
+            <div class="fgroup col-2">
+              <label>Nome Completo <span class="req">*</span></label>
+              <input type="text" id="c-nome" placeholder="Nome completo do contato"/>
+              <span class="field-err" id="err-c-nome"></span>
+            </div>
+            <div class="fgroup">
+              <label>Cargo / Função</label>
+              <input type="text" id="c-cargo" placeholder="Ex: Diretor, Assessor"/>
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="fgroup">
+              <label>Órgão / Instituição <span class="req">*</span></label>
+              <input type="text" id="c-orgao" placeholder="Ex: Ministério da Fazenda"/>
+              <span class="field-err" id="err-c-orgao"></span>
+            </div>
+            <div class="fgroup">
+              <label>Departamento / Setor</label>
+              <input type="text" id="c-departamento" placeholder="Ex: Gabinete, CGTI"/>
+            </div>
+          </div>
+        </div>
 
-      atualizarPreview();
-      navegarPara('tela-cad-endereco');
-    }
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-envelope" style="color:var(--ext)"></i> E-mails
+            <button type="button" class="btn-add-field" onclick="addEmail()"><i class="fas fa-plus"></i> Adicionar</button>
+          </div>
+          <div id="emails-container-ext">
+            <div class="dyn-field">
+              <input type="email" class="email-inp" placeholder="email@exemplo.gov.br"/>
+              <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
 
-    function excluirEndereco(id) {
-      if (!estado.ehAdmin) {
-        exibirToast('Apenas administradores podem excluir.');
-        return;
-      }
-      if (confirm('Deseja realmente excluir este modelo de endereçamento?')) {
-        estado.enderecos = estado.enderecos.filter(item => item.id !== id);
-        salvarDadosNuvem();
-        renderizarEnderecos();
-        exibirToast('Endereçamento excluído com sucesso!');
-      }
-    }
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-phone" style="color:var(--ext)"></i> Telefones
+            <button type="button" class="btn-add-field" onclick="addTelefone()"><i class="fas fa-plus"></i> Adicionar</button>
+          </div>
+          <div id="telefones-container-ext">
+            <div class="dyn-field">
+              <input type="text" class="tel-inp" placeholder="(61) 99999-9999"/>
+              <select class="tel-tipo">
+                <option value="celular">Celular</option>
+                <option value="fixo">Fixo</option>
+                <option value="ramal">Ramal</option>
+              </select>
+              <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
 
-    function alternarCamposTipoForm() {
-      const tipo = document.getElementById('end-tipo').value;
-      const ehSimples = tipo === 'simples';
-      
-      document.getElementById('campos-simples').classList.toggle('hidden', !ehSimples);
-      document.getElementById('campos-circular').classList.toggle('hidden', ehSimples);
-      
-      document.getElementById('end-vocativo').required = ehSimples;
-      document.getElementById('end-nome').required = ehSimples;
-      document.getElementById('end-cargo').required = ehSimples;
-      document.getElementById('end-orgao').required = false;
-      document.getElementById('end-local').required = ehSimples;
-      document.getElementById('end-texto-circular').required = !ehSimples;
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-note-sticky" style="color:var(--ext)"></i> Observações</div>
+          <div class="fgroup">
+            <textarea id="c-obs" rows="3" placeholder="Informações adicionais, observações..."></textarea>
+          </div>
+        </div>
 
-      atualizarPreview();
-    }
+        <div class="form-section" id="section-ocultar-contato" style="background:var(--red-l); padding:16px; border-radius:var(--radius-sm); border:1px solid #FCA5A5;">
+          <div class="fgroup">
+            <label class="chk-label" style="font-weight:700; color:var(--red); font-size:13px;">
+              <input type="checkbox" id="c-oculto"/>
+              <i class="fas fa-eye-slash"></i> Ocultar este contato das consultas gerais (Visível apenas para Administradores)
+            </label>
+          </div>
+        </div>
+      </div>
 
-    function atualizarPreview() {
-      const tipo = document.getElementById('end-tipo').value;
-      let p = '';
-      if (tipo === 'simples') {
-        const voc = document.getElementById('end-vocativo').value;
-        const nome = document.getElementById('end-nome').value;
-        const cargo = document.getElementById('end-cargo').value;
-        const orgao = document.getElementById('end-orgao').value;
-        const local = document.getElementById('end-local').value;
+      <div class="form-actions">
+        <button class="btn-sec" onclick="limparFormulario()"><i class="fas fa-rotate-left"></i> Limpar</button>
+        <button class="btn-pri" onclick="salvarContato()"><i class="fas fa-floppy-disk"></i> Salvar Cadastro</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TELA CONSULTA ══ -->
+  <section id="tela-consulta" class="tela">
+    <div class="tela-header">
+      <div class="tela-header-left">
+        <button class="btn-voltar" onclick="contatoEditandoId=null; limparFormulario(); irPara('inicio')"><i class="fas fa-arrow-left"></i></button>
+        <div class="tela-titulo">
+          <h2>Consulta de Contatos</h2>
+          <p id="consulta-total-txt">Carregando...</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-export excel" onclick="exportarExcel()"><i class="fas fa-file-excel"></i> Exportar Excel</button>
+        <button class="btn-export pdf"   onclick="exportarPDF()"><i class="fas fa-file-pdf"></i> Exportar PDF</button>
+      </div>
+    </div>
+
+    <div class="consulta-toolbar">
+      <div class="consulta-search-row">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="busca-inp" placeholder="Buscar por unidade, código, diretor, e-mail, nome..."
+            oninput="filtrarContatos()"/>
+          <button class="btn-clear-search hidden" id="btn-clear" onclick="limparBusca()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <select class="filter-select" id="filtro-orgao" onchange="filtrarContatos()">
+          <option value="">Todas as unidades/órgãos</option>
+        </select>
+        <select class="sort-select" id="sort-sel" onchange="filtrarContatos()">
+          <option value="recente">↓ Mais recente</option>
+          <option value="antigo">↑ Mais antigo</option>
+          <option value="az">A → Z (nome/unidade)</option>
+          <option value="za">Z → A (nome/unidade)</option>
+        </select>
+      </div>
+      <div class="consulta-filters">
+        <div class="tipo-tabs">
+          <button class="tipo-tab ativo-todos" onclick="setFiltroTipo('')" id="tab-todos">
+            <i class="fas fa-list"></i> Todos <span class="tab-count" id="count-todos">0</span>
+          </button>
+          <button class="tipo-tab" onclick="setFiltroTipo('COMUNICACAO')" id="tab-com">
+            <i class="fas fa-file-lines"></i> Com/Dilig. <span class="tab-count" id="count-com">0</span>
+          </button>
+          <button class="tipo-tab" onclick="setFiltroTipo('EXTERNO')" id="tab-ext">
+            <i class="fas fa-globe"></i> Externos <span class="tab-count" id="count-ext">0</span>
+          </button>
+        </div>
+        <div class="result-info" id="result-info"></div>
+      </div>
+    </div>
+
+    <div class="contatos-grid" id="contatos-grid">
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Carregando...</h3>
+      </div>
+    </div>
+    <div id="paginacao"></div>
+  </section>
+
+  <!-- ══ TELA TELEFONES ÚTEIS ══ -->
+  <section id="tela-telefones" class="tela">
+    <div class="tela-header">
+      <div class="tela-header-left">
+        <button class="btn-voltar" onclick="irPara('inicio')"><i class="fas fa-arrow-left"></i></button>
+        <div class="tela-titulo">
+          <h2><i class="fas fa-phone-volume" style="color:var(--green);font-size:22px"></i> Telefones Úteis</h2>
+          <p id="tel-total-txt">Carregando...</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn-pri" style="background:var(--green)" onclick="abrirModalTelefone()">
+          <i class="fas fa-plus"></i> Novo Contato
+        </button>
+        <button class="btn-sec" onclick="sincronizarTelefones()" title="Reimportar contatos dos cadastros">
+          <i class="fas fa-rotate"></i> Sincronizar
+        </button>
+      </div>
+    </div>
+
+    <div class="tel-toolbar">
+      <div class="tel-search-row">
+        <div class="search-box" style="flex:1">
+          <i class="fas fa-search"></i>
+          <input type="text" id="tel-busca" placeholder="Buscar por nome, unidade, telefone ou e-mail..." oninput="filtrarTelefones()"/>
+          <button class="btn-clear-search hidden" id="tel-btn-clear" onclick="limparBuscaTel()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <select class="filter-select" id="tel-filtro-origem" onchange="filtrarTelefones()" style="min-width:160px">
+          <option value="">Todas as origens</option>
+          <option value="com">Comunicação/Diligência</option>
+          <option value="ext">Externos</option>
+          <option value="man">Cadastrados aqui</option>
+        </select>
+        <select class="sort-select" id="tel-sort" onchange="filtrarTelefones()" style="min-width:150px">
+          <option value="az">A → Z (nome)</option>
+          <option value="za">Z → A (nome)</option>
+        </select>
+      </div>
+      <div style="font-size:13px;color:var(--g500)" id="tel-result-info"></div>
+    </div>
+
+    <div class="tel-grid" id="tel-grid">
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Carregando...</h3>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TELA MÓDULO DE ENDEREÇAMENTOS ══ -->
+  <section id="tela-enderecos" class="tela">
+    <div class="tela-header">
+      <div class="tela-header-left">
+        <button class="btn-voltar" onclick="irPara('inicio')"><i class="fas fa-arrow-left"></i></button>
+        <div class="tela-titulo">
+          <h2>Endereçamentos para Ofícios <span class="db-sync-indicator" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#059669;background:#D1FAE5;padding:4px 10px;border-radius:20px;text-transform:uppercase;"><i class="fas fa-wifi"></i> Banco Online</span></h2>
+          <p>Cabeçalhos oficiais para expedição de Ofícios Simples e Circulares</p>
+        </div>
+      </div>
+      <button class="btn-pri hidden" id="btn-novo-endereco" onclick="abrirFormEndereco()"><i class="fas fa-plus"></i> Novo Endereçamento</button>
+    </div>
+
+    <div class="consulta-toolbar">
+      <div class="consulta-search-row">
+        <div class="search-box" style="flex:1">
+          <i class="fas fa-search"></i>
+          <input type="text" id="input-busca-end" placeholder="Buscar por autoridade, cargo, órgão ou texto..." oninput="renderizarEnderecos()"/>
+        </div>
+      </div>
+      <div class="consulta-filters">
+        <div class="tipo-tabs">
+          <button class="tipo-tab ativo-todos" id="tab-end-todos" onclick="filtrarTipoEnd('todos')">Todos</button>
+          <button class="tipo-tab" id="tab-end-simples" onclick="filtrarTipoEnd('simples')"><i class="fas fa-user"></i> Ofício Simples</button>
+          <button class="tipo-tab" id="tab-end-circular" onclick="filtrarTipoEnd('circular')"><i class="fas fa-users"></i> Ofício Circular</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="contatos-grid" id="container-enderecos"></div>
+  </section>
+
+  <!-- ══ TELA CADASTRO / EDIÇÃO DE ENDEREÇAMENTO ══ -->
+  <section id="tela-cad-endereco" class="tela">
+    <div class="tela-header">
+      <div class="tela-header-left">
+        <button class="btn-voltar" onclick="irPara('enderecos')"><i class="fas fa-arrow-left"></i></button>
+        <div class="tela-titulo">
+          <h2 id="form-end-titulo">Novo Endereçamento</h2>
+          <p>Cadastre ou edite um modelo oficial de endereçamento para expedição de ofício</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <form id="form-endereco" onsubmit="salvarEndereco(event)">
+        <input type="hidden" id="end-id">
         
-        p = montarTextoSimples(
-          voc || '[Vocativo]',
-          nome || '[Nome]',
-          cargo || '[Cargo]',
-          orgao,
-          local || '[Local]'
-        );
-      } else {
-        p = document.getElementById('end-texto-circular').value || '[Texto circular]';
-      }
-      document.getElementById('end-preview').innerText = p;
-    }
+        <div class="fgroup" style="margin-bottom:20px;">
+          <label>Tipo de Ofício <span class="req">*</span></label>
+          <select id="end-tipo" onchange="alternarCamposTipoForm()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;">
+            <option value="simples">Ofício Simples (Autoridade Específica)</option>
+            <option value="circular">Ofício Circular (Coletivo / Grupo)</option>
+          </select>
+        </div>
 
-    function salvarEndereco(e) {
-      e.preventDefault();
-      if (!estado.ehAdmin) {
-        exibirToast('Apenas administradores podem cadastrar ou editar.');
+        <div id="campos-simples">
+          <div class="fgroup" style="margin-bottom:20px;"><label>Vocativo / Tratamento <span class="req">*</span></label><input type="text" id="end-vocativo" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreview()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Nome da Autoridade <span class="req">*</span></label><input type="text" id="end-nome" placeholder="Ex: Desembargador FABIANO ABEL DE ARAGÃO FERNANDES" oninput="atualizarPreview()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Cargo / Função <span class="req">*</span></label><input type="text" id="end-cargo" placeholder="Ex: 1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Órgão / Instituição <span style="color:var(--g400);font-weight:500;">(Opcional)</span></label><input type="text" id="end-orgao" placeholder="Ex: Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Expressão Final / Local <span class="req">*</span></label><input type="text" id="end-local" placeholder="Ex: N E S T A" oninput="atualizarPreview()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+        </div>
+
+        <div id="campos-circular" class="hidden">
+          <div class="fgroup" style="margin-bottom:20px;">
+            <label>Texto Completo do Endereçamento Coletivo <span class="req">*</span></label>
+            <textarea id="end-texto-circular" rows="4" placeholder="Ex: Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás" oninput="atualizarPreview()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></textarea>
+          </div>
+        </div>
+
+        <div class="fgroup" style="margin-bottom:20px;">
+          <label><i class="fas fa-eye"></i> Pré-visualização</label>
+          <div class="preview-box" id="end-preview" style="background:#F8FAFC;border:1px solid var(--g300);border-radius:var(--radius-sm);padding:20px;white-space:pre-line;color:var(--g900);font-size:14px;">Preencha os campos acima para visualizar o cabeçalho...</div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-sec" onclick="irPara('enderecos')">Cancelar</button>
+          <button type="submit" class="btn-pri"><i class="fas fa-floppy-disk"></i> Salvar Endereçamento</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ══ TELA BACKUP & AUDITORIA (Restrito ao Admin) ══ -->
+  <section id="tela-backup-audit" class="tela">
+    <div class="tela-header">
+      <div class="tela-header-left">
+        <button class="btn-voltar" onclick="irPara('inicio')"><i class="fas fa-arrow-left"></i></button>
+        <div class="tela-titulo">
+          <h2><i class="fas fa-shield-halved" style="color:var(--primary);font-size:22px"></i> Backup & Auditoria</h2>
+          <p>Painel administrativo restrito do sistema</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:24px; max-width:1000px; margin:0 auto;">
+      <!-- Painel Backup -->
+      <div style="background:var(--g800); border-radius:var(--radius); padding:28px 32px; color:white; display:flex; flex-direction:column; gap:16px; box-shadow:var(--shadow-md)">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:48px; height:48px; background:rgba(255,255,255,0.1); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; color:#60A5FA;">
+            <i class="fas fa-circle-exclamation"></i>
+          </div>
+          <div>
+            <h3 style="font-size:16px; font-weight:800; color:white;">Backup Técnico do Banco de Dados</h3>
+            <p style="font-size:12px; color:var(--g400);">Gere e restaure cópias de segurança em formato bruto (JSON) de todas as coleções.</p>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:8px;">
+          <!-- Criar Backup -->
+          <div style="border:1px solid rgba(255,255,255,0.1); padding:20px; border-radius:12px; background:rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:10px;">
+            <h4 style="font-size:13px; font-weight:700; color:white;"><i class="fas fa-download" style="color:#60A5FA; margin-right:6px"></i> 1. Criar Cópia de Segurança</h4>
+            <p style="font-size:11.5px; color:var(--g400); line-height:1.5;">Baixa um arquivo .json completo contendo usuários, contatos, telefones úteis e logs de auditoria.</p>
+            <button id="btn-export-backup" onclick="exportJSONBackup()" class="btn-pri" style="margin-top:auto; font-size:12px; padding:8px 16px; width:100%; justify-content:center;">
+              <i class="fas fa-download"></i> Baixar Cópia (.json)
+            </button>
+          </div>
+          <!-- Restaurar Backup -->
+          <div style="border:1px solid rgba(255,255,255,0.1); padding:20px; border-radius:12px; background:rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:10px;">
+            <h4 style="font-size:13px; font-weight:700; color:white;"><i class="fas fa-upload" style="color:#F87171; margin-right:6px"></i> 2. Restaurar Banco de Dados</h4>
+            <p style="font-size:11.5px; color:var(--g400); line-height:1.5;">Sobrescreve ou mescla os dados atuais do Firestore com base em um arquivo .json anteriormente exportado.</p>
+            <input type="file" id="backup-file-input" accept=".json" style="display:none" onchange="importJSONBackup(event)">
+            <button id="btn-import-backup" onclick="document.getElementById('backup-file-input').click()" class="btn-pri" style="margin-top:auto; background:var(--red); font-size:12px; padding:8px 16px; width:100%; justify-content:center;">
+              <i class="fas fa-upload"></i> Carregar e Restaurar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Auditoria -->
+      <div style="background:white; border-radius:var(--radius); border:1px solid var(--g200); box-shadow:var(--shadow); overflow:hidden;">
+        <div style="padding:24px; border-bottom:1px solid var(--g100);">
+          <h3 style="font-size:16px; font-weight:800; color:var(--g900);">Log de Atividades do Sistema</h3>
+          <p style="font-size:12px; color:var(--g500); margin-top:2px;">Histórico recente de modificações no banco de dados.</p>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Usuário</th>
+                <th>Ação</th>
+                <th>Detalhes</th>
+              </tr>
+            </thead>
+            <tbody id="audit-body">
+              <tr>
+                <td colspan="4" class="text-center text-slate-400 py-4">Carregando logs de atividades...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- fim app-wrap -->
+</div><!-- fim app-shell -->
+
+<!-- MODAL: TELEFONE ÚTIL (cadastrar / editar) -->
+<div id="modal-telefone" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="ver-stripe" style="background:linear-gradient(90deg,var(--green),#34D399)"></div>
+    <div class="modal-head">
+      <h3 id="tel-modal-titulo"><i class="fas fa-phone-volume"></i> Novo Telefone Útil</h3>
+      <button class="modal-close" onclick="fecharModal('modal-telefone')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="tel-form-grid">
+        <div class="fgroup full">
+          <label>Nome / Servidor <span class="req">*</span></label>
+          <input type="text" id="tf-nome" placeholder="Nome completo do servidor ou contato"/>
+          <span class="field-err" id="err-tf-nome"></span>
+        </div>
+        <div class="fgroup full">
+          <label>Unidade / Departamento</label>
+          <input type="text" id="tf-unidade" placeholder="Ex: Assessoria Jurídica, CGTI"/>
+        </div>
+        <div class="fgroup">
+          <label>Telefone Fixo</label>
+          <input type="text" id="tf-fixo" placeholder="(62) 3216-0000"/>
+        </div>
+        <div class="fgroup">
+          <label>Celular</label>
+          <input type="text" id="tf-celular" placeholder="(62) 99999-9999"/>
+        </div>
+        <div class="fgroup full">
+          <label>E-mail</label>
+          <input type="email" id="tf-email" placeholder="servidor@tjgo.jus.br"/>
+        </div>
+        <div class="fgroup full" style="background:var(--red-l); padding:12px; border-radius:var(--radius-sm); border:1px solid #FCA5A5; margin-top:8px;">
+          <label class="chk-label" style="font-weight:700; color:var(--red); font-size:12px; text-transform:none;">
+            <input type="checkbox" id="tf-oculto"/>
+            <i class="fas fa-eye-slash"></i> Ocultar dos usuários comuns (Apenas ADM)
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="fecharModal('modal-telefone')"><i class="fas fa-times"></i> Cancelar</button>
+      <button class="btn-pri" style="background:var(--green)" onclick="salvarTelefone()">
+        <i class="fas fa-floppy-disk"></i> <span id="tel-btn-salvar-txt">Salvar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VER CONTATO -->
+<div id="modal-ver" class="modal-overlay hidden">
+  <div class="modal-box xl">
+    <div class="ver-stripe" id="ver-stripe"></div>
+    <div class="modal-head">
+      <h3 id="ver-titulo"><i class="fas fa-address-card"></i> Detalhes do Cadastro</h3>
+      <button class="modal-close" onclick="fecharModal('modal-ver')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="ver-body"></div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="fecharModal('modal-ver')"><i class="fas fa-times"></i> Fechar</button>
+      <button class="btn-pri" id="btn-editar-ver"><i class="fas fa-pen"></i> Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMAR EXCLUIR -->
+<div id="modal-confirmar" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-body" style="text-align:center;padding:36px 28px">
+      <div class="modal-confirmar-ico"><i class="fas fa-trash"></i></div>
+      <h3 style="font-size:18px;font-weight:800;color:var(--g900);margin-bottom:10px">Confirmar exclusão</h3>
+      <p id="confirmar-msg" style="color:var(--g500);font-size:14px;margin-bottom:24px"></p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn-sec" onclick="fecharModal('modal-confirmar')">Cancelar</button>
+        <button class="btn-pri" id="btn-confirmar" style="background:var(--red)">
+          <i class="fas fa-trash"></i> Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ALTERAR SENHA -->
+<div id="modal-alterar-senha" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width: 440px; height: auto; max-height: 90vh;">
+    <div class="ver-stripe" style="background: var(--primary);"></div>
+    <div class="modal-head">
+      <h3><i class="fas fa-key"></i> Alterar Minha Senha</h3>
+      <button class="modal-close" onclick="fecharModal('modal-alterar-senha')"><i class="fas fa-times"></i></button>
+    </div>
+    <form onsubmit="alterarSenhaSubmit(event)">
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="fgroup">
+          <label for="change-pwd-current">Senha Atual <span class="req">*</span></label>
+          <input type="password" id="change-pwd-current" required placeholder="Digite sua senha atual" />
+        </div>
+        <div class="fgroup">
+          <label for="change-pwd-new">Nova Senha <span class="req">*</span></label>
+          <input type="password" id="change-pwd-new" required placeholder="Mínimo 6 caracteres" />
+        </div>
+        <div class="fgroup">
+          <label for="change-pwd-confirm">Confirmar Nova Senha <span class="req">*</span></label>
+          <input type="password" id="change-pwd-confirm" required placeholder="Confirme a nova senha" />
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-sec" onclick="fecharModal('modal-alterar-senha')"><i class="fas fa-times"></i> Cancelar</button>
+        <button type="submit" class="btn-pri"><i class="fas fa-floppy-disk"></i> Atualizar Senha</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-wrap"></div>
+
+<!-- LOADING -->
+<div id="loading-overlay" class="hidden">
+  <div class="loading-spin"></div>
+</div>
+
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, doc, addDoc, getDoc,
+         getDocs, updateDoc, deleteDoc,
+         query, orderBy, serverTimestamp, where, setDoc, writeBatch, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+         EmailAuthProvider, reauthenticateWithCredential, updatePassword }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+/* ══════════════════════════
+   🔥 FIREBASE CONFIG
+══════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyAb41PleAsglzBLxQ6iFW3r2-cl15bYMCk",
+  authDomain:        "secexecpres-contatos.firebaseapp.com",
+  projectId:         "secexecpres-contatos",
+  storageBucket:     "secexecpres-contatos.appspot.com",
+  messagingSenderId: "841573722795",
+  appId:             "1:841573722795:web:3635d93cd513c6b1a6a5ee"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const auth = getAuth(app);
+
+/* ══════════════════════════
+   ESTADO GLOBAL
+══════════════════════════ */
+let todosContatos     = [];
+let contatosFiltrados = [];
+let filtroTipoAtual   = "";
+let paginaAtual       = 1;
+let contatoEditandoId = null;
+const POR_PAGINA      = 12;
+let currentUserRole   = "VISUALIZADOR";
+let currentUserData   = null;
+let auditUnsubscribe  = null;
+
+/* ══════════════════════════
+   🔐 AUTH & SECURITY
+══════════════════════════ */
+window.checkPermission = (action) => {
+  const role = (currentUserRole || "").toUpperCase();
+  if (role === "ADMIN") return true;
+  if (role === "SERVIDOR") {
+    if (action === "delete" || action === "admin") return false;
+    return true;
+  }
+  if (role === "VISUALIZADOR") {
+    if (action === "read" || action === "copy") return true;
+    return false;
+  }
+  return false;
+};
+
+function atualizarInterfacePermissoes() {
+  const canCreate = checkPermission("create");
+  document.getElementById("btn-nav-cad-com").classList.toggle("hidden", !canCreate);
+  document.getElementById("btn-nav-cad-ext").classList.toggle("hidden", !canCreate);
+  
+  // Guard button elements inside screens
+  const btnNovoTel = document.querySelector(".btn-pri[onclick='abrirModalTelefone()']");
+  if (btnNovoTel) btnNovoTel.classList.toggle("hidden", !canCreate);
+  const btnSincTel = document.querySelector(".btn-sec[onclick='sincronizarTelefones()']");
+  if (btnSincTel) btnSincTel.classList.toggle("hidden", !canCreate);
+}
+
+async function logAction(action, details) {
+  try {
+    const userEmail = auth.currentUser ? auth.currentUser.email : "Desconhecido";
+    const userName = currentUserData ? currentUserData.nome : "Desconhecido";
+    await addDoc(collection(db, "audit"), {
+      timestamp: serverTimestamp(),
+      usuario: `${userName} (${userEmail})`,
+      email: userEmail,
+      acao: action,
+      detalhes: details
+    });
+  } catch (e) {
+    console.error("Erro ao gravar log de auditoria:", e);
+  }
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    mostrarLoading(true);
+    try {
+      const userRef = doc(db, "usuarios", user.uid);
+      const userSnap = await getDoc(userRef);
+      
+      if (!userSnap.exists()) {
+        const q = query(collection(db, "usuarios"), where("email", "==", user.email));
+        const qSnap = await getDocs(q);
+        if (!qSnap.empty) {
+          currentUserData = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
+        } else {
+          // Criar perfil padrão se não existir
+          const defaultUser = {
+            nome: user.displayName || user.email.split('@')[0],
+            email: user.email,
+            perfil: "VISUALIZADOR",
+            criadoEm: serverTimestamp()
+          };
+          await setDoc(userRef, defaultUser);
+          currentUserData = { id: user.uid, ...defaultUser };
+        }
+      } else {
+        currentUserData = { id: user.uid, ...userSnap.data() };
+      }
+      
+      currentUserRole = currentUserData.perfil || "VISUALIZADOR";
+      
+      // Update header details
+      document.getElementById("user-display-name").textContent = currentUserData.nome || user.email;
+      document.getElementById("user-display-role").textContent = currentUserRole;
+      document.getElementById("user-display-avatar").src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUserData.nome || user.email)}&background=4F46E5&color=fff&bold=true`;
+      
+      // Check admin panel
+      const isAdmin = currentUserRole.toUpperCase() === "ADMIN";
+      document.getElementById("btn-nav-backup-audit")?.classList.toggle("hidden", !isAdmin);
+      
+      // Toggle topbar buttons
+      document.getElementById("btn-login-adm")?.classList.add("hidden");
+      document.getElementById("btn-logout-adm")?.classList.remove("hidden");
+      
+      fecharModal("modal-login-adm");
+      atualizarInterfacePermissoes();
+      
+      await logAction("Login", `Usuário ${user.email} acessou o sistema.`);
+      
+      if (isAdmin) {
+        carregarAuditoria();
+      }
+      if (todosContatos.length) filtrarContatos();
+      if (todosTelefones.length) filtrarTelefones();
+    } catch (e) {
+      console.error("Erro ao autenticar usuário:", e);
+      toast("erro", "Erro de autenticação: " + e.message);
+      await signOut(auth);
+    } finally {
+      mostrarLoading(false);
+    }
+  } else {
+    currentUserData = null;
+    currentUserRole = "VISUALIZADOR";
+    document.getElementById("app-shell")?.classList.remove("hidden");
+    const elLoginModal = document.getElementById("modal-login-adm");
+    if (elLoginModal) elLoginModal.classList.add("hidden");
+    
+    document.getElementById("user-display-name").textContent = "Visitante";
+    document.getElementById("user-display-role").textContent = "Público";
+    document.getElementById("user-display-avatar").src = `https://ui-avatars.com/api/?name=Visitante&background=64748B&color=fff&bold=true`;
+    
+    document.getElementById("btn-login-adm")?.classList.remove("hidden");
+    document.getElementById("btn-logout-adm")?.classList.add("hidden");
+    document.getElementById("btn-nav-backup-audit")?.classList.add("hidden");
+    
+    atualizarInterfacePermissoes();
+    carregarContatos();
+    carregarTelefones();
+  }
+});
+
+window.loginUser = async (event) => {
+  event.preventDefault();
+  const email = document.getElementById("login-email").value.trim();
+  const pass = document.getElementById("login-password").value;
+  
+  if (!email || !pass) {
+    toast("aviso", "Preencha todos os campos.");
+    return;
+  }
+  
+  const btn = document.getElementById("btn-login-submit");
+  const originalText = btn.textContent;
+  btn.textContent = "Entrando...";
+  btn.disabled = true;
+  document.getElementById("db-status").textContent = "Verificando credenciais...";
+  
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    toast("ok", "Login ADM efetuado!");
+    fecharModal("modal-login-adm");
+  } catch (err) {
+    console.error(err);
+    let msg = "Erro ao fazer login.";
+    if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      msg = "E-mail ou senha incorretos.";
+    } else if (err.code === "auth/invalid-email") {
+      msg = "E-mail inválido.";
+    }
+    toast("erro", msg);
+    document.getElementById("db-status").textContent = "Credenciais inválidas.";
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+};
+
+window.logoutUser = async () => {
+  try {
+    if (auditUnsubscribe) {
+      auditUnsubscribe();
+      auditUnsubscribe = null;
+    }
+    await signOut(auth);
+    toast("ok", "Sessão encerrada.");
+  } catch (e) {
+    console.error(e);
+    toast("erro", "Erro ao encerrar sessão.");
+  }
+};
+
+window.abrirModalAlterarSenha = () => {
+  document.getElementById("change-pwd-current").value = "";
+  document.getElementById("change-pwd-new").value = "";
+  document.getElementById("change-pwd-confirm").value = "";
+  abrirModal("modal-alterar-senha");
+};
+
+window.alterarSenhaSubmit = async (event) => {
+  event.preventDefault();
+  const currentPass = document.getElementById("change-pwd-current").value;
+  const newPass = document.getElementById("change-pwd-new").value;
+  const confirmPass = document.getElementById("change-pwd-confirm").value;
+
+  if (newPass.length < 6) {
+    toast("aviso", "A nova senha deve ter pelo menos 6 caracteres.");
+    return;
+  }
+
+  if (newPass !== confirmPass) {
+    toast("aviso", "A nova senha e a confirmação não coincidem.");
+    return;
+  }
+
+  mostrarLoading(true);
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Usuário não autenticado.");
+
+    const credential = EmailAuthProvider.credential(user.email, currentPass);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPass);
+
+    toast("ok", "Senha alterada com sucesso!");
+    fecharModal("modal-alterar-senha");
+    await logAction("Alteração de Senha", "O usuário alterou sua própria senha.");
+  } catch (err) {
+    console.error(err);
+    let msg = "Erro ao alterar senha.";
+    if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+      msg = "Senha atual incorreta.";
+    } else if (err.code === "auth/weak-password") {
+      msg = "A nova senha é muito fraca.";
+    }
+    toast("erro", msg);
+  } finally {
+    mostrarLoading(false);
+  }
+};
+
+/* ══════════════════════════
+   TOAST
+══════════════════════════ */
+function toast(tipo, msg) {
+  const ico = { ok:"circle-check", erro:"circle-xmark", aviso:"triangle-exclamation" };
+  const el  = document.createElement("div");
+  el.className = `toast ${tipo}`;
+  el.innerHTML = `<i class="fas fa-${ico[tipo]||"info"}"></i><span>${msg}</span>`;
+  document.getElementById("toast-wrap").appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function mostrarLoading(v) {
+  document.getElementById("loading-overlay").classList.toggle("hidden", !v);
+}
+
+/* ══════════════════════════
+   🛠️ BACKUP & AUDITORIA LOGIC
+══════════════════════════ */
+function carregarAuditoria() {
+  if (!checkPermission("admin")) return;
+  
+  if (auditUnsubscribe) auditUnsubscribe();
+  
+  const q = query(collection(db, "audit"), orderBy("timestamp", "desc"));
+  auditUnsubscribe = onSnapshot(q, (snapshot) => {
+    const auditBody = document.getElementById("audit-body");
+    if (!auditBody) return;
+    
+    if (snapshot.empty) {
+      auditBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--g400)">Nenhum log registrado.</td></tr>`;
+      return;
+    }
+    
+    auditBody.innerHTML = snapshot.docs.map(doc => {
+      const data = doc.data();
+      let dataHora = "—";
+      if (data.timestamp) {
+        const d = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+        dataHora = d.toLocaleString("pt-BR");
+      }
+      return `
+        <tr>
+          <td style="white-space:nowrap">${dataHora}</td>
+          <td style="font-weight:600">${data.usuario || "Desconhecido"}</td>
+          <td><span class="cc-badge" style="background:var(--primary-l); color:var(--primary); font-size:11px; padding:2px 8px">${data.acao || "Ação"}</span></td>
+          <td style="color:var(--g600); max-width: 300px; word-break: break-word;">${data.detalhes || ""}</td>
+        </tr>
+      `;
+    }).join("");
+  }, (error) => {
+    console.error("Erro no listener de auditoria:", error);
+  });
+}
+
+window.exportJSONBackup = async () => {
+  if (!checkPermission("admin")) {
+    toast("erro", "Acesso negado.");
+    return;
+  }
+  mostrarLoading(true);
+  try {
+    const contatosSnap = await getDocs(collection(db, "contatos"));
+    const contatosData = contatosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const telsSnap = await getDocs(collection(db, "telefonesUteis"));
+    const telsData = telsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const usersSnap = await getDocs(collection(db, "usuarios"));
+    const usersData = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const auditSnap = await getDocs(collection(db, "audit"));
+    const auditData = auditSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const backup = {
+      version: "1.0",
+      exportadoEm: new Date().toISOString(),
+      contatos: contatosData,
+      telefonesUteis: telsData,
+      usuarios: usersData,
+      audit: auditData
+    };
+
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `backup_contatos_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    await logAction("Exportação de Backup", "Exportação completa realizada com sucesso.");
+    toast("ok", "Backup baixado com sucesso!");
+  } catch (e) {
+    console.error(e);
+    toast("erro", "Erro ao exportar backup: " + e.message);
+  } finally {
+    mostrarLoading(false);
+  }
+};
+
+window.importJSONBackup = async (event) => {
+  if (!checkPermission("admin")) {
+    toast("erro", "Acesso negado.");
+    return;
+  }
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.contatos && !backup.telefonesUteis) {
+        toast("erro", "Arquivo de backup inválido.");
         return;
       }
-      const id = document.getElementById('end-id').value;
-      const tipo = document.getElementById('end-tipo').value;
+
+      const prosseguir = confirm("Você tem certeza de que deseja restaurar as coleções a partir do arquivo selecionado?");
+      if (!prosseguir) {
+        event.target.value = "";
+        return;
+      }
+
+      const sobrescrever = confirm("Deseja LIMPAR (apagar) os dados atuais de Contatos, Telefones Úteis, Usuários e Auditoria antes de importar?\n\n- Pressione OK para SOBRESCREVER (limpar dados antigos)\n- Pressione CANCELAR para MESCLAR (manter dados atuais e adicionar os novos)");
+
+      mostrarLoading(true);
+
+      const batchWriteCollection = async (colName, items) => {
+        let currentBatch = writeBatch(db);
+        let count = 0;
+        
+        for (const item of items) {
+          const { id, ...data } = item;
+          const docRef = doc(db, colName, id);
+          currentBatch.set(docRef, data, { merge: true });
+          count++;
+
+          if (count === 400) {
+            await currentBatch.commit();
+            currentBatch = writeBatch(db);
+            count = 0;
+          }
+        }
+
+        if (count > 0) {
+          await currentBatch.commit();
+        }
+      };
+
+      if (sobrescrever) {
+        const collectionsToClear = ["contatos", "telefonesUteis", "usuarios", "audit"];
+        for (const colName of collectionsToClear) {
+          const snap = await getDocs(collection(db, colName));
+          let currentBatch = writeBatch(db);
+          let count = 0;
+          for (const document of snap.docs) {
+            currentBatch.delete(document.ref);
+            count++;
+            if (count === 400) {
+              await currentBatch.commit();
+              currentBatch = writeBatch(db);
+              count = 0;
+            }
+          }
+          if (count > 0) {
+            await currentBatch.commit();
+          }
+        }
+      }
+
+      if (backup.contatos) {
+        await batchWriteCollection("contatos", backup.contatos);
+      }
+      if (backup.telefonesUteis) {
+        await batchWriteCollection("telefonesUteis", backup.telefonesUteis);
+      }
+      if (backup.usuarios || backup.users) {
+        await batchWriteCollection("usuarios", backup.usuarios || backup.users);
+      }
+      if (backup.audit) {
+        await batchWriteCollection("audit", backup.audit);
+      }
+
+      await logAction("Restauração de Backup", `Restauração realizada com sucesso (${sobrescrever ? "Sobrescreveu" : "Mesclou"}).`);
+      toast("ok", "Restauração de backup concluída!");
       
-      let obj = { id: id ? Number(id) : Date.now(), tipo };
-      if (tipo === 'simples') {
-        obj.vocativo = document.getElementById('end-vocativo').value;
-        obj.nome = document.getElementById('end-nome').value;
-        obj.cargo = document.getElementById('end-cargo').value;
-        obj.orgao = document.getElementById('end-orgao').value;
-        obj.local = document.getElementById('end-local').value;
-      } else {
-        obj.textoCircular = document.getElementById('end-texto-circular').value;
-      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
 
-      if (id) {
-        const index = estado.enderecos.findIndex(item => item.id === Number(id));
-        if (index !== -1) estado.enderecos[index] = obj;
-        exibirToast('Endereçamento alterado com sucesso!');
-      } else {
-        estado.enderecos.push(obj);
-        exibirToast('Endereçamento cadastrado com sucesso!');
-      }
+    } catch (err) {
+      console.error(err);
+      toast("erro", "Erro ao restaurar backup: " + err.message);
+    } finally {
+      mostrarLoading(false);
+      event.target.value = "";
+    }
+  };
+  reader.readAsText(file);
+};
 
-      salvarDadosNuvem();
-      navegarPara('tela-enderecos');
+/* ══════════════════════════
+   NAVEGAÇÃO
+══════════════════════════ */
+window.irPara = (tela) => {
+  if (tela === "cadastro" && !checkPermission("create")) {
+    toast("aviso", "Você não tem permissão para cadastrar contatos.");
+    return;
+  }
+  if (tela === "cad-endereco" && !checkPermission("create")) {
+    toast("aviso", "Você não tem permissão para cadastrar endereçamentos.");
+    return;
+  }
+  if (tela === "backup-audit" && !checkPermission("admin")) {
+    toast("aviso", "Acesso restrito a administradores.");
+    return;
+  }
+
+  document.querySelectorAll(".tela").forEach(t => t.classList.remove("ativa"));
+  const elTela = document.getElementById(`tela-${tela}`);
+  if (elTela) elTela.classList.add("ativa");
+
+  document.querySelectorAll(".topbar-btn").forEach(b => b.classList.remove("ativo"));
+  const mapa = { inicio:"btn-nav-inicio", consulta:"btn-nav-consulta", telefones:"btn-nav-telefones", enderecos:"btn-nav-enderecos", "backup-audit":"btn-nav-backup-audit" };
+  if (mapa[tela]) document.getElementById(mapa[tela])?.classList.add("ativo");
+  window.scrollTo(0,0);
+  if (tela === "consulta")  carregarContatos();
+  if (tela === "telefones") carregarTelefones();
+  if (tela === "enderecos") carregarEnderecos();
+  if (tela === "backup-audit") carregarAuditoria();
+};
+
+window.irParaCadastro = (tipo) => {
+  contatoEditandoId = null;
+  limparFormulario();
+  setTipo(tipo);
+  document.getElementById("cad-titulo").textContent    = tipo === "COMUNICACAO" ? "Nova Comunicação / Diligência" : "Novo Contato Externo";
+  document.getElementById("cad-subtitulo").textContent = tipo === "COMUNICACAO" ? "Preencha os dados da unidade interna" : "Preencha os dados do contato externo";
+  irPara("cadastro");
+};
+
+/* ══════════════════════════
+   TIPO CADASTRO
+══════════════════════════ */
+window.setTipo = (tipo) => {
+  document.getElementById("c-tipo").value = tipo;
+  const isCom = tipo === "COMUNICACAO";
+  document.getElementById("campos-com").classList.toggle("hidden", !isCom);
+  document.getElementById("campos-ext").classList.toggle("hidden",  isCom);
+};
+
+/* ══════════════════════════
+   CAMPOS DINÂMICOS
+══════════════════════════ */
+window.addEmail = () => {
+  const tipo = document.getElementById("c-tipo").value;
+  const cId  = tipo === "COMUNICACAO" ? "emails-container" : "emails-container-ext";
+  const c    = document.getElementById(cId);
+  const d    = document.createElement("div");
+  d.className = "dyn-field";
+  d.innerHTML = `<input type="email" class="email-inp" placeholder="email@exemplo.gov.br"/>
+    <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>`;
+  c.appendChild(d);
+  d.querySelector("input").focus();
+};
+
+window.addTelefone = () => {
+  const tipo = document.getElementById("c-tipo").value;
+  const cId  = tipo === "COMUNICACAO" ? "telefones-container" : "telefones-container-ext";
+  const c    = document.getElementById(cId);
+  const d    = document.createElement("div");
+  d.className = "dyn-field";
+  d.innerHTML = tipo === "COMUNICACAO"
+    ? `<input type="text" class="tel-inp" placeholder="(62) 3216-0000"/>
+       <select class="tel-tipo"><option value="fixo">Fixo</option><option value="ramal">Ramal</option><option value="celular">Celular</option></select>
+       <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>`
+    : `<input type="text" class="tel-inp" placeholder="(61) 99999-9999"/>
+       <select class="tel-tipo"><option value="celular">Celular</option><option value="fixo">Fixo</option><option value="ramal">Ramal</option></select>
+       <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>`;
+  c.appendChild(d);
+  d.querySelector("input").focus();
+};
+
+window.removerCampo = (btn) => {
+  const parent = btn.closest(".dyn-field");
+  const container = parent.parentElement;
+  if (container.querySelectorAll(".dyn-field").length > 1) parent.remove();
+  else { parent.querySelectorAll("input").forEach(i => i.value = ""); }
+};
+
+/* ══════════════════════════
+   LIMPAR FORMULÁRIO
+══════════════════════════ */
+window.limparFormulario = () => {
+  ["c-codigo","c-unidade","c-diretor","c-encaminhar","c-obs-com",
+   "c-nome","c-cargo","c-orgao","c-departamento","c-obs"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = "";
+  });
+  ["err-c-codigo","err-c-unidade","err-c-nome","err-c-orgao"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = "";
+  });
+  document.getElementById("emails-container").innerHTML = `
+    <div class="dyn-field"><input type="email" class="email-inp" placeholder="email@tjgo.jus.br"/>
+    <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button></div>`;
+  document.getElementById("telefones-container").innerHTML = `
+    <div class="dyn-field"><input type="text" class="tel-inp" placeholder="(62) 3216-0000"/>
+    <select class="tel-tipo"><option value="fixo">Fixo</option><option value="ramal">Ramal</option><option value="celular">Celular</option></select>
+    <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button></div>`;
+  document.getElementById("emails-container-ext").innerHTML = `
+    <div class="dyn-field"><input type="email" class="email-inp" placeholder="email@exemplo.gov.br"/>
+    <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button></div>`;
+  document.getElementById("telefones-container-ext").innerHTML = `
+    <div class="dyn-field"><input type="text" class="tel-inp" placeholder="(61) 99999-9999"/>
+    <select class="tel-tipo"><option value="celular">Celular</option><option value="fixo">Fixo</option><option value="ramal">Ramal</option></select>
+    <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button></div>`;
+  document.getElementById("c-id").value = "";
+  const chkOculto = document.getElementById("c-oculto");
+  if (chkOculto) chkOculto.checked = false;
+  // contatoEditandoId é zerado apenas pelo fluxo de salvar/cancelar, não aqui
+};
+
+/* ══════════════════════════
+   SALVAR
+══════════════════════════ */
+window.salvarContato = async () => {
+  if (!checkPermission("create")) {
+    toast("erro", "Você não tem permissão para salvar cadastros.");
+    return;
+  }
+
+  const tipo = document.getElementById("c-tipo").value;
+  ["err-c-codigo","err-c-unidade","err-c-nome","err-c-orgao"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = "";
+  });
+
+  const oculto = !!document.getElementById("c-oculto")?.checked;
+  let dados = { tipo, oculto, atualizadoEm: serverTimestamp() };
+
+  if (tipo === "COMUNICACAO") {
+    const unidade = document.getElementById("c-unidade").value.trim();
+    if (!unidade) { document.getElementById("err-c-unidade").textContent = "Unidade obrigatória."; return; }
+    const emails   = [...document.getElementById("emails-container").querySelectorAll(".email-inp")].map(i => i.value.trim()).filter(Boolean);
+    const telInps  = [...document.getElementById("telefones-container").querySelectorAll(".tel-inp")];
+    const telTipos = [...document.getElementById("telefones-container").querySelectorAll(".tel-tipo")];
+    const telefones = telInps.map((inp,i) => ({ numero:inp.value.trim(), tipo:telTipos[i]?.value||"fixo" })).filter(t => t.numero);
+    dados = { ...dados, unidade, nome:unidade,
+      codigo:     document.getElementById("c-codigo").value.trim(),
+      diretor:    document.getElementById("c-diretor").value.trim(),
+      encaminhar: document.getElementById("c-encaminhar").value.trim(),
+      obs:        document.getElementById("c-obs-com").value.trim(),
+      emails, telefones
+    };
+  } else {
+    const nome  = document.getElementById("c-nome").value.trim();
+    const orgao = document.getElementById("c-orgao").value.trim();
+    if (!nome)  { document.getElementById("err-c-nome").textContent  = "Nome obrigatório.";  return; }
+    if (!orgao) { document.getElementById("err-c-orgao").textContent = "Órgão obrigatório."; return; }
+    const emails   = [...document.getElementById("emails-container-ext").querySelectorAll(".email-inp")].map(i => i.value.trim()).filter(Boolean);
+    const telInps  = [...document.getElementById("telefones-container-ext").querySelectorAll(".tel-inp")];
+    const telTipos = [...document.getElementById("telefones-container-ext").querySelectorAll(".tel-tipo")];
+    const telefones = telInps.map((inp,i) => ({ numero:inp.value.trim(), tipo:telTipos[i]?.value||"celular" })).filter(t => t.numero);
+    dados = { ...dados, nome, orgao,
+      cargo:        document.getElementById("c-cargo").value.trim(),
+      departamento: document.getElementById("c-departamento").value.trim(),
+      obs:          document.getElementById("c-obs").value.trim(),
+      emails, telefones
+    };
+  }
+
+  mostrarLoading(true);
+  try {
+    const labelNome = dados.unidade || dados.nome;
+    if (contatoEditandoId) {
+      await updateDoc(doc(db,"contatos",contatoEditandoId), dados);
+      await logAction("Edição", `Editou o contato: ${labelNome}`);
+      toast("ok", "Cadastro atualizado com sucesso!");
+      contatoEditandoId = null;
+    } else {
+      dados.criadoEm = serverTimestamp();
+      await addDoc(collection(db,"contatos"), dados);
+      await logAction("Criação", `Criou o contato: ${labelNome}`);
+      toast("ok", "Cadastro realizado com sucesso!");
+    }
+    limparFormulario();
+    irPara("consulta");
+  } catch(err) {
+    console.error(err);
+    toast("erro", "Erro ao salvar. Tente novamente.");
+  } finally { mostrarLoading(false); }
+};
+
+/* ══════════════════════════
+   CARREGAR CONTATOS
+══════════════════════════ */
+async function carregarContatos() {
+  try {
+    const q    = query(collection(db,"contatos"), orderBy("criadoEm","desc"));
+    const snap = await getDocs(q);
+    todosContatos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    atualizarContadores();
+    popularFiltroOrgao();
+    filtrarContatos();
+  } catch(e) {
+    console.error(e);
+    toast("erro", "Erro ao carregar dados.");
+  }
+}
+
+function atualizarContadores() {
+  const isAdmin = checkPermission("admin");
+  const visiveis = todosContatos.filter(c => !c.oculto || isAdmin);
+  const total = visiveis.length;
+  const nCom  = visiveis.filter(c => c.tipo === "COMUNICACAO" || c.tipo === "INTERNO").length;
+  const nExt  = visiveis.filter(c => c.tipo === "EXTERNO").length;
+  document.getElementById("count-todos").textContent = total;
+  document.getElementById("count-com").textContent   = nCom;
+  document.getElementById("count-ext").textContent   = nExt;
+  document.getElementById("consulta-total-txt").textContent = `${total} cadastro${total!==1?"s":""} no sistema`;
+}
+
+function popularFiltroOrgao() {
+  const isAdmin = checkPermission("admin");
+  const visiveis = todosContatos.filter(c => !c.oculto || isAdmin);
+  const sel = document.getElementById("filtro-orgao");
+  const orgaos = [...new Set(visiveis.map(c => c.unidade || c.orgao).filter(Boolean))].sort();
+  sel.innerHTML = `<option value="">Todas as unidades/órgãos</option>` +
+    orgaos.map(o => `<option value="${o}">${o}</option>`).join("");
+}
+
+/* ══════════════════════════
+   FILTROS E ABAS
+══════════════════════════ */
+window.setFiltroTipo = (tipo) => {
+  filtroTipoAtual = tipo;
+  ["tab-todos","tab-com","tab-ext"].forEach(id => {
+    document.getElementById(id).className = "tipo-tab";
+  });
+  if (!tipo)               document.getElementById("tab-todos").classList.add("ativo-todos");
+  else if(tipo==="COMUNICACAO") document.getElementById("tab-com").classList.add("ativo-com");
+  else                     document.getElementById("tab-ext").classList.add("ativo-ext");
+  filtrarContatos();
+};
+
+window.filtrarContatos = () => {
+  const busca = (document.getElementById("busca-inp")?.value||"").toLowerCase().trim();
+  const orgao = document.getElementById("filtro-orgao")?.value || "";
+  const sort  = document.getElementById("sort-sel")?.value || "recente";
+  const isAdmin = checkPermission("admin");
+  document.getElementById("btn-clear")?.classList.toggle("hidden", !busca);
+
+  contatosFiltrados = todosContatos.filter(c => {
+    if (c.oculto && !isAdmin) return false;
+    const textos = [c.nome,c.unidade,c.orgao,c.departamento,c.cargo,c.diretor,c.encaminhar,c.codigo,...(c.emails||[])];
+    const matchBusca = !busca || textos.some(v => v && String(v).toLowerCase().includes(busca));
+    const matchTipo  = !filtroTipoAtual || c.tipo === filtroTipoAtual || (filtroTipoAtual==="COMUNICACAO" && c.tipo==="INTERNO");
+    const matchOrgao = !orgao || c.unidade===orgao || c.orgao===orgao;
+    return matchBusca && matchTipo && matchOrgao;
+  });
+
+  // Ordenação
+  const getNome = c => (c.unidade || c.nome || "").toLowerCase();
+  const getTs   = c => c.criadoEm?.seconds || 0;
+  if (sort === "az")      contatosFiltrados.sort((a,b) => getNome(a).localeCompare(getNome(b), "pt-BR"));
+  else if (sort === "za") contatosFiltrados.sort((a,b) => getNome(b).localeCompare(getNome(a), "pt-BR"));
+  else if (sort === "antigo") contatosFiltrados.sort((a,b) => getTs(a) - getTs(b));
+  else                    contatosFiltrados.sort((a,b) => getTs(b) - getTs(a)); // recente
+
+  paginaAtual = 1;
+  const n = contatosFiltrados.length;
+  document.getElementById("result-info").innerHTML = n
+    ? `<strong>${n}</strong> resultado${n!==1?"s":""}` : "";
+  renderizarContatos();
+};
+
+window.limparBusca = () => {
+  document.getElementById("busca-inp").value = "";
+  filtrarContatos();
+};
+
+/* ══════════════════════════
+   RENDERIZAR CARDS
+══════════════════════════ */
+function renderizarContatos() {
+  const grid  = document.getElementById("contatos-grid");
+  const inicio= (paginaAtual - 1) * POR_PAGINA;
+  const pagina= contatosFiltrados.slice(inicio, inicio + POR_PAGINA);
+
+  if (!contatosFiltrados.length) {
+    grid.innerHTML = `<div class="empty-state">
+      <i class="fas fa-magnifying-glass"></i>
+      <h3>Nenhum cadastro encontrado</h3>
+      <p>Tente outros termos de busca ou adicione um novo cadastro</p>
+    </div>`;
+    document.getElementById("paginacao").innerHTML = "";
+    return;
+  }
+
+  grid.innerHTML = pagina.map(c => criarCard(c)).join("");
+  renderizarPaginacao();
+}
+
+function criarCard(c) {
+  const isCom  = c.tipo === "COMUNICACAO" || c.tipo === "INTERNO";
+  const tc     = isCom ? "com" : "ext";
+  const label  = isCom ? "Com/Dilig." : "Externo";
+  const titulo = isCom ? (c.unidade || "-") : (c.nome || "-");
+  const emails = (c.emails||[]).filter(Boolean);
+  const tels   = (c.telefones||[]).filter(t=>t?.numero);
+  const inicial= titulo.charAt(0).toUpperCase();
+  const isAdmin = checkPermission("admin");
+  const badgeOcultoHtml = c.oculto ? `<span class="badge-oculto" title="Visível apenas para Administradores"><i class="fas fa-eye-slash"></i> Oculto</span>` : "";
+
+  let detalhes = "";
+  if (isCom) {
+    if (c.codigo) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-hashtag" style="color:var(--com)"></i>
+        <div><span class="cc-det-label">Código</span><span class="cc-det-val copyable" onclick="event.stopPropagation(); copiarTexto('${c.codigo}', this)" title="Clique para copiar">${c.codigo}</span></div>
+      </div>`;
+    if (c.diretor) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-user-tie" style="color:var(--com)"></i>
+        <div><span class="cc-det-label">Diretor / Endereçar Para</span><span class="cc-det-val">${c.diretor}</span></div>
+      </div>`;
+    if (c.encaminhar) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-share" style="color:var(--com)"></i>
+        <div><span class="cc-det-label">Encaminhar Para</span><span class="cc-det-val">${c.encaminhar}</span></div>
+      </div>`;
+  } else {
+    if (c.cargo) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-id-badge" style="color:var(--ext)"></i>
+        <div><span class="cc-det-label">Cargo / Função</span><span class="cc-det-val">${c.cargo}</span></div>
+      </div>`;
+    if (c.orgao) detalhes += `
+      <div class="cc-det">
+        <i class="fas fa-building" style="color:var(--ext)"></i>
+        <div><span class="cc-det-label">Órgão</span><span class="cc-det-val">${c.orgao}</span></div>
+      </div>`;
+  }
+  if (emails[0]) detalhes += `
+    <div class="cc-det">
+      <i class="fas fa-envelope" style="color:var(--g400)"></i>
+      <div><span class="cc-det-label">E-mail</span><span class="cc-det-val copyable" onclick="event.stopPropagation(); copiarTexto('${emails[0]}', this)" title="Clique para copiar">${emails[0]}</span></div>
+    </div>`;
+  if (tels[0]) detalhes += `
+    <div class="cc-det">
+      <i class="fas fa-phone" style="color:var(--g400)"></i>
+      <div><span class="cc-det-label">Telefone (${tels[0].tipo})</span><span class="cc-det-val copyable" onclick="event.stopPropagation(); copiarTexto('${tels[0].numero}', this)" title="Clique para copiar">${tels[0].numero}</span></div>
+    </div>`;
+
+  const btnOcultarToggle = isAdmin
+    ? (c.oculto
+        ? `<button class="cc-btn revelar" onclick="alternarOcultarContato('${c.id}','contatos',false)" title="Tornar Visível para Todos"><i class="fas fa-eye"></i> Revelar</button>`
+        : `<button class="cc-btn ocultar" onclick="alternarOcultarContato('${c.id}','contatos',true)" title="Ocultar de Usuários Comuns"><i class="fas fa-eye-slash"></i> Ocultar</button>`)
+    : "";
+
+  return `
+  <div class="cc tipo-${tc}" onclick="verContato('${c.id}')">
+    <div class="cc-stripe"></div>
+    <div class="cc-body">
+      <div class="cc-top">
+        <div class="cc-av">${inicial}</div>
+        <div class="cc-info">
+          <div class="cc-nome">${titulo}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="cc-badge">${label}</span>
+          ${badgeOcultoHtml}
+        </div>
+      </div>
+      <div class="cc-details">${detalhes || "<span style='color:var(--g400);font-size:13px'>Sem informações adicionais</span>"}</div>
+    </div>
+    <div class="cc-foot" onclick="event.stopPropagation()">
+      <button class="cc-btn view" onclick="verContato('${c.id}')"><i class="fas fa-eye"></i> Ver</button>
+      ${btnOcultarToggle}
+      ${checkPermission("edit") ? `<button class="cc-btn edit" onclick="editarContato('${c.id}')"><i class="fas fa-pen"></i> Editar</button>` : ""}
+      ${checkPermission("delete") ? `<button class="cc-btn del" onclick="confirmarExcluir('${c.id}','${(titulo).replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>` : ""}
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════
+   PAGINAÇÃO
+══════════════════════════ */
+function renderizarPaginacao() {
+  const total = Math.ceil(contatosFiltrados.length / POR_PAGINA);
+  const el    = document.getElementById("paginacao");
+  if (total <= 1) { el.innerHTML = ""; return; }
+  let html = `<div class="paginacao">
+    <button class="pag-btn" onclick="mudarPagina(${paginaAtual-1})" ${paginaAtual===1?"disabled":""}>
+      <i class="fas fa-chevron-left"></i>
+    </button>`;
+  for (let i=1;i<=total;i++) {
+    if (i===1||i===total||Math.abs(i-paginaAtual)<=2)
+      html += `<button class="pag-btn ${i===paginaAtual?"ativo":""}" onclick="mudarPagina(${i})">${i}</button>`;
+    else if (Math.abs(i-paginaAtual)===3)
+      html += `<span style="padding:0 4px;color:var(--g400)">…</span>`;
+  }
+  html += `<button class="pag-btn" onclick="mudarPagina(${paginaAtual+1})" ${paginaAtual===total?"disabled":""}>
+    <i class="fas fa-chevron-right"></i>
+  </button></div>`;
+  el.innerHTML = html;
+}
+
+window.mudarPagina = (p) => {
+  const total = Math.ceil(contatosFiltrados.length / POR_PAGINA);
+  if (p < 1 || p > total) return;
+  paginaAtual = p;
+  renderizarContatos();
+  window.scrollTo(0,0);
+};
+
+/* ══════════════════════════
+   VER CONTATO
+══════════════════════════ */
+window.verContato = (id) => {
+  const c = todosContatos.find(x => x.id === id);
+  if (!c) return;
+  const isCom  = c.tipo === "COMUNICACAO" || c.tipo === "INTERNO";
+  const tc     = isCom ? "com" : "ext";
+  const titulo = isCom ? (c.unidade || "-") : (c.nome || "-");
+  const sub    = isCom ? (c.diretor || "") : (c.cargo || "");
+  const emails = (c.emails||[]).filter(Boolean);
+  const tels   = (c.telefones||[]).filter(t=>t?.numero);
+
+  document.getElementById("ver-stripe").className = `ver-stripe ${tc}`;
+
+  let campos = "";
+  if (isCom) {
+    campos = `
+      ${c.codigo     ? `<div class="ver-field"><label>Código</label><p>${c.codigo}</p></div>` : ""}
+      <div class="ver-field"><label>Unidade</label><p style="font-weight:800;font-size:15px">${c.unidade||"—"}</p></div>
+      ${c.diretor    ? `<div class="ver-field"><label>Diretor / Endereçar Para</label><p>${c.diretor}</p></div>` : ""}
+      ${c.encaminhar ? `<div class="ver-field full"><label>Encaminhar a Comunicação Para</label><p>${c.encaminhar}</p></div>` : ""}`;
+  } else {
+    campos = `
+      <div class="ver-field"><label>Nome</label><p style="font-weight:800;font-size:15px">${c.nome||"—"}</p></div>
+      ${c.cargo       ? `<div class="ver-field"><label>Cargo / Função</label><p>${c.cargo}</p></div>` : ""}
+      ${c.orgao       ? `<div class="ver-field"><label>Órgão / Instituição</label><p>${c.orgao}</p></div>` : ""}
+      ${c.departamento? `<div class="ver-field"><label>Departamento</label><p>${c.departamento}</p></div>` : ""}`;
+  }
+
+  const emailsHtml = emails.length
+    ? emails.map(e=>`<span class="ver-tag" onclick="copiarTexto('${e}',this)" title="Clique para copiar">
+        <i class="fas fa-envelope orig-ico"></i><i class="fas fa-copy copy-ico"></i>${e}
+      </span>`).join("")
+    : "<span style='color:var(--g400)'>—</span>";
+  const telsHtml = tels.length
+    ? tels.map(t=>`<span class="ver-tag" onclick="copiarTexto('${t.numero}',this)" title="Clique para copiar">
+        <i class="fas fa-phone orig-ico"></i><i class="fas fa-copy copy-ico"></i>${t.numero} <small style="color:var(--g400)">(${t.tipo})</small>
+      </span>`).join("")
+    : "<span style='color:var(--g400)'>—</span>";
+
+  // Monta placeholder automático de comunicação com dados do cadastro
+  const placeholderCom = (() => {
+    if (!isCom) return "";
+    const dest   = c.diretor    ? `A Sua Senhoria a Senhora ${c.diretor.toUpperCase()} ` : "";
+    const unid   = c.unidade    ? `${c.unidade}` : "";
+    const encam  = c.encaminhar ? `Encaminho a presente comunicação ao(à) ${c.encaminhar}` : "Encaminho a presente comunicação";
+    return `${dest}${unid ? `\n${unid}` : ""}\n\nSenhor(a),\n\n${encam}, a fim de cientificá-lo(a) do inteiro teor do Despacho (evento XX), conforme determinado pelo Desembargador Leandro Crispim, Presidente deste egrégio Tribunal de Justiça do Estado de Goiás.\n\nAtenciosamente,\nXXXXXXXXXXXXXXXXXXXXXXXXXX\nAssessor Administrativo\nSecretaria Executiva da Presidência`.trim();
+  })();
+
+  document.getElementById("ver-body").innerHTML = `
+    <div class="ver-header">
+      <div class="ver-av ${tc}">${titulo.charAt(0).toUpperCase()}</div>
+      <div class="ver-nome">
+        <h3>${titulo}</h3>
+        ${sub ? `<p>${sub}</p>` : ""}
+      </div>
+    </div>
+    <div class="ver-grid">
+      ${campos}
+      <div class="ver-field"><label>E-mails</label><div class="ver-tags">${emailsHtml}</div></div>
+      <div class="ver-field"><label>Telefones</label><div class="ver-tags">${telsHtml}</div></div>
+
+    </div>
+
+    <!-- CAMPOS TEXTO: COMUNICAÇÃO + DILIGÊNCIA -->
+    <div style="border-top:2px solid var(--g200);margin-top:20px;padding-top:20px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--g500);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+        <i class="fas fa-pen-to-square"></i> Textos para uso
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- COMUNICAÇÃO -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--com);display:flex;align-items:center;gap:6px">
+            <i class="fas fa-file-lines"></i> Texto da Comunicação
+          </span>
+          <div style="display:flex;gap:6px">
+            <button class="btn-txt-save" onclick="salvarTexto('${c.id}','com')" title="Salvar">
+              <i class="fas fa-floppy-disk"></i> Salvar
+            </button>
+            <button class="btn-txt-copy com" onclick="copiarAreaTexto('txt-comunicacao',this)">
+              <i class="fas fa-copy"></i> Copiar
+            </button>
+          </div>
+        </div>
+        <textarea id="txt-comunicacao" style="width:100%;min-height:180px;padding:12px 14px;border:1.5px solid var(--com-m);border-radius:10px;font-size:13px;font-family:var(--font);color:var(--g900);background:var(--com-l);line-height:1.7;resize:vertical;outline:none;transition:border-color .2s" placeholder="Digite o texto da comunicação...">${c.txtComunicacao || (isCom ? placeholderCom : "")}</textarea>
+      </div>
+
+      <!-- DILIGÊNCIA -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ext);display:flex;align-items:center;gap:6px">
+            <i class="fas fa-gavel"></i> Texto da Diligência
+          </span>
+          <div style="display:flex;gap:6px">
+            <button class="btn-txt-save" onclick="salvarTexto('${c.id}','dilig')" title="Salvar">
+              <i class="fas fa-floppy-disk"></i> Salvar
+            </button>
+            <button class="btn-txt-copy dilig" onclick="copiarAreaTexto('txt-diligencia',this)">
+              <i class="fas fa-copy"></i> Copiar
+            </button>
+          </div>
+        </div>
+        <textarea id="txt-diligencia" style="width:100%;min-height:180px;padding:12px 14px;border:1.5px solid var(--ext-m);border-radius:10px;font-size:13px;font-family:var(--font);color:var(--g900);background:var(--ext-l);line-height:1.7;resize:vertical;outline:none;transition:border-color .2s" placeholder="Digite o texto da diligência...">${c.txtDiligencia || ""}</textarea>
+      </div>
+
+    </div>
+    </div>`;
+
+  const btnEditarVer = document.getElementById("btn-editar-ver");
+  if (btnEditarVer) {
+    btnEditarVer.style.display = checkPermission("edit") ? "inline-flex" : "none";
+  }
+  document.getElementById("btn-editar-ver").onclick = () => {
+    fecharModal("modal-ver"); editarContato(id);
+  };
+  abrirModal("modal-ver");
+};
+
+/* ══════════════════════════
+   EDITAR
+══════════════════════════ */
+window.editarContato = (id) => {
+  if (!checkPermission("edit")) {
+    toast("erro", "Você não tem permissão para editar cadastros.");
+    return;
+  }
+  const c = todosContatos.find(x => x.id === id);
+  if (!c) return;
+  const tipo = c.tipo === "INTERNO" ? "COMUNICACAO" : c.tipo;
+
+  contatoEditandoId = id;   // ← definido ANTES de limparFormulario para não ser zerado
+  limparFormulario();
+  contatoEditandoId = id;   // ← restaurado após limparFormulario (que o zeraria)
+  setTipo(tipo);
+  document.getElementById("c-id").value = id;
+
+  document.getElementById("cad-titulo").textContent    = "Editar Cadastro";
+  document.getElementById("cad-subtitulo").textContent = "Altere os campos desejados";
+
+  if (tipo === "COMUNICACAO") {
+    document.getElementById("c-codigo").value     = c.codigo     || "";
+    document.getElementById("c-unidade").value    = c.unidade    || "";
+    document.getElementById("c-diretor").value    = c.diretor    || "";
+    document.getElementById("c-encaminhar").value = c.encaminhar || "";
+    document.getElementById("c-obs-com").value    = c.obs        || "";
+    preencherDynFields("emails-container",    c.emails||[],    false);
+    preencherDynFields("telefones-container", c.telefones||[], true, "fixo");
+  } else {
+    document.getElementById("c-nome").value        = c.nome        || "";
+    document.getElementById("c-cargo").value       = c.cargo       || "";
+    document.getElementById("c-orgao").value       = c.orgao       || "";
+    document.getElementById("c-departamento").value= c.departamento|| "";
+    document.getElementById("c-obs").value         = c.obs         || "";
+    preencherDynFields("emails-container-ext",    c.emails||[],    false);
+    preencherDynFields("telefones-container-ext", c.telefones||[], true, "celular");
+  }
+  const chkOculto = document.getElementById("c-oculto");
+  if (chkOculto) chkOculto.checked = !!c.oculto;
+  irPara("cadastro");
+};
+
+function preencherDynFields(containerId, itens, isTel, tipoDefault) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = "";
+  const lista = itens.length ? itens : isTel ? [{numero:"",tipo:tipoDefault}] : [""];
+  lista.forEach(item => {
+    const d = document.createElement("div");
+    d.className = "dyn-field";
+    if (isTel) {
+      const t = item;
+      const opts = ["fixo","ramal","celular"].map(v=>`<option value="${v}" ${t.tipo===v?"selected":""}>${v.charAt(0).toUpperCase()+v.slice(1)}</option>`).join("");
+      d.innerHTML = `<input type="text" class="tel-inp" value="${t.numero||""}"/>
+        <select class="tel-tipo">${opts}</select>
+        <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>`;
+    } else {
+      d.innerHTML = `<input type="email" class="email-inp" value="${item||""}"/>
+        <button type="button" class="btn-rm-field" onclick="removerCampo(this)"><i class="fas fa-trash"></i></button>`;
+    }
+    el.appendChild(d);
+  });
+}
+
+/* ══════════════════════════
+   EXCLUIR
+══════════════════════════ */
+window.confirmarExcluir = (id, nome) => {
+  if (!checkPermission("delete")) {
+    toast("erro", "Você não tem permissão para excluir cadastros.");
+    return;
+  }
+  document.getElementById("confirmar-msg").textContent = `Deseja excluir permanentemente "${nome}"?`;
+  document.getElementById("btn-confirmar").onclick = async () => {
+    mostrarLoading(true);
+    try {
+      await deleteDoc(doc(db,"contatos",id));
+      await logAction("Exclusão", `Excluiu o contato: ${nome}`);
+      toast("ok","Cadastro excluído com sucesso.");
+      fecharModal("modal-confirmar");
+      await carregarContatos();
+    } catch(e) {
+      toast("erro","Erro ao excluir.");
+    } finally { mostrarLoading(false); }
+  };
+  abrirModal("modal-confirmar");
+};
+
+/* ══════════════════════════
+   COPIAR PARA ÁREA DE TRANSFERÊNCIA
+══════════════════════════ */
+window.copiarTexto = async (txt, el) => {
+  try {
+    await navigator.clipboard.writeText(txt);
+    toast("ok", "Copiado: " + txt);
+    const orig = el.innerHTML;
+    el.innerHTML = `<i class="fas fa-check" style="color:var(--green)"></i> <span style="color:var(--green)">Copiado!</span>`;
+    setTimeout(() => { el.innerHTML = orig; }, 1800);
+  } catch { toast("aviso","Não foi possível copiar."); }
+};
+
+/* ══════════════════════════
+   ABAS TEXTO (comunicação / diligência)
+══════════════════════════ */
+window.switchTxtTab = (tab) => {
+  const isCom = tab === "com";
+  document.getElementById("tab-com-btn").className  = "txt-tab" + (isCom   ? " ativo-com"   : "");
+  document.getElementById("tab-dilig-btn").className = "txt-tab" + (!isCom  ? " ativo-dilig" : "");
+  document.getElementById("panel-com").classList.toggle("ativo",  isCom);
+  document.getElementById("panel-dilig").classList.toggle("ativo", !isCom);
+};
+
+window.copiarAreaTexto = async (id, btn) => {
+  const txt = document.getElementById(id)?.value || "";
+  if (!txt.trim()) { toast("aviso","Nenhum texto para copiar."); return; }
+  try {
+    await navigator.clipboard.writeText(txt);
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-check"></i> Copiado!`;
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  } catch { toast("aviso","Não foi possível copiar."); }
+};
+
+window.salvarTexto = async (id, tipo) => {
+  const campo = tipo === "com" ? "txtComunicacao" : "txtDiligencia";
+  const elId  = tipo === "com" ? "txt-comunicacao" : "txt-diligencia";
+  const valor = document.getElementById(elId)?.value || "";
+  mostrarLoading(true);
+  try {
+    await updateDoc(doc(db,"contatos",id), { [campo]: valor });
+    // Atualiza cache local
+    const idx = todosContatos.findIndex(c => c.id === id);
+    if (idx >= 0) todosContatos[idx][campo] = valor;
+    toast("ok", tipo === "com" ? "Texto da comunicação salvo!" : "Texto da diligência salvo!");
+  } catch(e) {
+    console.error(e);
+    toast("erro","Erro ao salvar texto.");
+  } finally { mostrarLoading(false); }
+};
+
+/* ══════════════════════════
+   EXPORTAR EXCEL
+══════════════════════════ */
+window.exportarExcel = () => {
+  if (!contatosFiltrados.length) { toast("aviso","Nenhum contato para exportar."); return; }
+
+  const linhas = [["Tipo","Código","Unidade/Nome","Diretor","Encaminhar Para","Cargo","Órgão","Departamento","E-mails","Telefones","Observações"]];
+  contatosFiltrados.forEach(c => {
+    const isCom = c.tipo==="COMUNICACAO"||c.tipo==="INTERNO";
+    linhas.push([
+      isCom ? "Comunicação/Diligência" : "Externo",
+      c.codigo||"",
+      isCom ? (c.unidade||"") : (c.nome||""),
+      c.diretor||"",
+      c.encaminhar||"",
+      c.cargo||"",
+      c.orgao||"",
+      c.departamento||"",
+      (c.emails||[]).filter(Boolean).join("; "),
+      (c.telefones||[]).filter(t=>t?.numero).map(t=>`${t.numero} (${t.tipo})`).join("; "),
+      c.obs||""
+    ]);
+  });
+
+  // Montar CSV (abre no Excel)
+  const csv = linhas.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n");
+  const bom  = "\uFEFF"; // BOM para UTF-8 no Excel
+  const blob = new Blob([bom + csv], { type:"text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = `contatos_secexecpres_${new Date().toLocaleDateString("pt-BR").replace(/\//g,"-")}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast("ok", `${contatosFiltrados.length} contato(s) exportado(s) para Excel.`);
+};
+
+/* ══════════════════════════
+   EXPORTAR PDF
+══════════════════════════ */
+window.exportarPDF = () => {
+  if (!contatosFiltrados.length) { toast("aviso","Nenhum contato para exportar."); return; }
+
+  const data = new Date().toLocaleDateString("pt-BR", {day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const total = contatosFiltrados.length;
+
+  const linhas = contatosFiltrados.map(c => {
+    const isCom = c.tipo==="COMUNICACAO"||c.tipo==="INTERNO";
+    const titulo = isCom ? (c.unidade||"-") : (c.nome||"-");
+    const sub    = isCom
+      ? [c.codigo && `Código: ${c.codigo}`, c.diretor && `Diretor: ${c.diretor}`, c.encaminhar && `Encaminhar: ${c.encaminhar}`].filter(Boolean)
+      : [c.cargo && `Cargo: ${c.cargo}`, c.orgao && `Órgão: ${c.orgao}`, c.departamento && `Depto: ${c.departamento}`].filter(Boolean);
+    const emails = (c.emails||[]).filter(Boolean);
+    const tels   = (c.telefones||[]).filter(t=>t?.numero).map(t=>`${t.numero} (${t.tipo})`);
+    const cor    = isCom ? "#0369A1" : "#7C3AED";
+    const bg     = isCom ? "#E0F2FE" : "#F5F3FF";
+    const label  = isCom ? "Com/Dilig." : "Externo";
+
+    return `
+    <tr>
+      <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;vertical-align:top">
+        <span style="display:inline-block;padding:2px 8px;background:${bg};color:${cor};border-radius:12px;font-size:10px;font-weight:700;margin-bottom:4px">${label}</span><br>
+        <strong style="font-size:13px;color:#111827">${titulo}</strong>
+        ${sub.length ? `<div style="font-size:11px;color:#6b7280;margin-top:3px">${sub.join(" · ")}</div>` : ""}
+      </td>
+      <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;vertical-align:top;font-size:12px;color:#374151">
+        ${emails.map(e=>`<div>✉ ${e}</div>`).join("")}
+        ${tels.map(t=>`<div>☎ ${t}</div>`).join("")}
+        ${!emails.length && !tels.length ? '<span style="color:#9ca3af">—</span>' : ""}
+      </td>
+    </tr>`;
+  }).join("");
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Contatos SecExecPres</title>
+  <style>
+    body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1f2937;background:white}
+    h1{font-size:20px;font-weight:800;color:#0f172a;margin:0}
+    .sub{font-size:12px;color:#6b7280;margin-top:4px;margin-bottom:20px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{background:#0f172a;color:white;padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+    @media print{body{padding:12px}}
+  </style></head><body>
+  <h1>📋 Contatos — SecExecPres</h1>
+  <div class="sub">Gerado em ${data} · ${total} registro(s)</div>
+  <table>
+    <thead><tr><th style="width:55%">Identificação</th><th>Contatos</th></tr></thead>
+    <tbody>${linhas}</tbody>
+  </table>
+  <script>window.onload=()=>{window.print()}<\/script>
+  </body></html>`;
+
+  const w = window.open("","_blank");
+  w.document.write(html);
+  w.document.close();
+  toast("ok", `PDF gerado com ${total} contato(s).`);
+};
+
+/* ══════════════════════════
+   MODAIS
+══════════════════════════ */
+window.abrirModal = (id) => {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove("hidden");
+};
+window.fecharModal = (id) => {
+  const el = document.getElementById(id);
+  if (el) el.classList.add("hidden");
+};
+document.querySelectorAll(".modal-overlay").forEach(overlay => {
+  overlay.addEventListener("click", e => { if (e.target===overlay) overlay.classList.add("hidden"); });
+});
+document.addEventListener("keydown", e => {
+  if (e.key==="Escape")
+    document.querySelectorAll(".modal-overlay:not(.hidden)").forEach(m => m.classList.add("hidden"));
+});
+
+/* ══════════════════════════════════════════
+   TELEFONES ÚTEIS
+══════════════════════════════════════════ */
+let todosTelefones    = [];
+let telFiltrados      = [];
+let telEditandoId     = null;
+
+// ── Carregar/sincronizar ──────────────────
+async function carregarTelefones() {
+  mostrarLoading(true);
+  try {
+    // 1) busca registros manuais
+    const snapshotMan = await getDocs(query(collection(db,"telefonesUteis"), orderBy("nome")));
+    const manuais = snapshotMan.docs.map(d => ({ id:d.id, ...d.data(), _origem:"man" }));
+
+    // 2) busca todos os contatos com telefone
+    const snapshotCon = await getDocs(collection(db,"contatos"));
+    const importados = [];
+    snapshotCon.docs.forEach(d => {
+      const c = d.data();
+      const tels = (c.telefones||[]).filter(t => t?.numero);
+      if (!tels.length) return;
+      const isCom = c.tipo==="COMUNICACAO"||c.tipo==="INTERNO";
+      const nome    = isCom ? (c.unidade||c.nome||"—") : (c.nome||"—");
+      const unidade = isCom
+        ? [c.codigo && `Cód. ${c.codigo}`, c.encaminhar].filter(Boolean).join(" · ")
+        : [c.cargo, c.orgao, c.departamento].filter(Boolean).join(" · ");
+      const fixo    = tels.find(t => t.tipo==="fixo"||t.tipo==="ramal")?.numero || "";
+      const celular = tels.find(t => t.tipo==="celular")?.numero || "";
+      const email   = (c.emails||[]).find(Boolean) || "";
+      importados.push({
+        id: "_imp_" + d.id,
+        _origem: isCom ? "com" : "ext",
+        _contatoId: d.id,
+        nome, unidade, fixo, celular, email
+      });
+    });
+
+    // 3) merge: manuais + importados (sem duplicar por _contatoId)
+    const idsManualRef = new Set(manuais.map(m => m._contatoId).filter(Boolean));
+    const importadosFiltrados = importados.filter(i => !idsManualRef.has(i._contatoId));
+    todosTelefones = [...manuais, ...importadosFiltrados];
+    filtrarTelefones();
+    document.getElementById("tel-total-txt").textContent =
+      `${todosTelefones.length} contato(s) com telefone`;
+  } catch(e) {
+    console.error(e);
+    toast("erro","Erro ao carregar telefones úteis.");
+  } finally { mostrarLoading(false); }
+}
+
+window.sincronizarTelefones = async () => {
+  await carregarTelefones();
+  toast("ok","Lista sincronizada com os cadastros.");
+};
+
+// ── Filtrar ───────────────────────────────
+window.filtrarTelefones = () => {
+  const busca   = (document.getElementById("tel-busca")?.value||"").toLowerCase();
+  const origem  = document.getElementById("tel-filtro-origem")?.value||"";
+  const sort    = document.getElementById("tel-sort")?.value||"az";
+  const isAdmin = checkPermission("admin");
+
+  document.getElementById("tel-btn-clear")?.classList.toggle("hidden", !busca);
+
+  telFiltrados = todosTelefones.filter(t => {
+    if (t.oculto && !isAdmin) return false;
+    const matchOrigem = !origem || t._origem===origem;
+    const texto = [t.nome,t.unidade,t.fixo,t.celular,t.email].join(" ").toLowerCase();
+    return matchOrigem && (!busca || texto.includes(busca));
+  });
+
+  telFiltrados.sort((a,b) =>
+    sort==="za" ? b.nome.localeCompare(a.nome,"pt-BR") : a.nome.localeCompare(b.nome,"pt-BR")
+  );
+
+  document.getElementById("tel-result-info").textContent =
+    `Exibindo ${telFiltrados.length} de ${todosTelefones.length} contato(s)`;
+
+  renderTelGrid();
+};
+
+window.limparBuscaTel = () => {
+  document.getElementById("tel-busca").value="";
+  filtrarTelefones();
+};
+
+// ── Render grid ───────────────────────────
+function renderTelGrid() {
+  const grid = document.getElementById("tel-grid");
+  if (!telFiltrados.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <i class="fas fa-phone-slash"></i>
+      <h3>Nenhum contato encontrado</h3>
+      <p>Tente ajustar os filtros ou adicione um novo contato.</p>
+    </div>`;
+    return;
+  }
+
+  const origemLabel = { com:"Com/Dilig.", ext:"Externo", man:"Manual" };
+  const isAdmin = checkPermission("admin");
+
+  grid.innerHTML = telFiltrados.map(t => {
+    const ini = (t.nome||"?")[0].toUpperCase();
+    const isMan = t._origem==="man";
+    const badgeOcultoHtml = t.oculto ? `<span class="badge-oculto" title="Visível apenas para Administradores"><i class="fas fa-eye-slash"></i> Oculto</span>` : "";
+    const linhaFixo   = t.fixo   ? `<div class="tc-linha clickable" onclick="copiarTexto('${t.fixo}',this)" title="Clique para copiar"><i class="fas fa-phone orig-ico"></i><i class="fas fa-copy copy-ico"></i><span>${t.fixo} <small style="color:var(--g400)">(fixo)</small></span></div>` : "";
+    const linhaCel    = t.celular ? `<div class="tc-linha clickable" onclick="copiarTexto('${t.celular}',this)" title="Clique para copiar"><i class="fas fa-mobile-screen orig-ico"></i><i class="fas fa-copy copy-ico"></i><span>${t.celular} <small style="color:var(--g400)">(cel)</small></span></div>` : "";
+    const linhaEmail  = t.email   ? `<div class="tc-linha clickable" onclick="copiarTexto('${t.email}',this)" title="Clique para copiar"><i class="fas fa-envelope orig-ico"></i><i class="fas fa-copy copy-ico"></i><span>${t.email}</span></div>` : "";
+    const semContato  = !t.fixo && !t.celular && !t.email ? `<div class="tc-linha"><i class="fas fa-ban"></i><span style="color:var(--g400)">Sem contato cadastrado</span></div>` : "";
+
+    const canEdit = checkPermission("edit");
+    const canDelete = checkPermission("delete");
+    
+    const btnEditar = canEdit ? `<button class="tc-btn edit" onclick="editarTelefone('${t.id}')"><i class="fas fa-pen"></i> Editar</button>` : "";
+    const btnOcultarToggle = (isAdmin && isMan)
+      ? (t.oculto
+          ? `<button class="tc-btn revelar" onclick="alternarOcultarContato('${t.id}','telefonesUteis',false)" title="Tornar Visível"><i class="fas fa-eye"></i></button>`
+          : `<button class="tc-btn ocultar" onclick="alternarOcultarContato('${t.id}','telefonesUteis',true)" title="Ocultar"><i class="fas fa-eye-slash"></i></button>`)
+      : "";
+
+    let btnExcluir = "";
+    if (isMan) {
+      btnExcluir = canDelete
+        ? `<button class="tc-btn del" onclick="excluirTelefone('${t.id}','${t.nome.replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i> Excluir</button>`
+        : "";
+    } else {
+      btnExcluir = `<span style="font-size:11px;color:var(--g400);padding:7px 0;flex:1;text-align:center">Editável no cadastro</span>`;
     }
 
-    function copiarTexto(txt) {
-      navigator.clipboard.writeText(txt).then(() => exibirToast('Copiado para a área de transferência!'));
+    const footHtml = (canEdit || (isMan && canDelete) || !isMan)
+      ? `<div class="tc-foot">
+          ${isMan && canEdit ? btnEditar : ""}
+          ${btnOcultarToggle}
+          ${btnExcluir}
+         </div>`
+      : "";
+
+    return `<div class="tc origem-${t._origem}">
+      <div class="tc-stripe"></div>
+      <div class="tc-body">
+        <div class="tc-top">
+          <div class="tc-av">${ini}</div>
+          <div class="tc-info">
+            <div class="tc-nome">${t.nome}</div>
+            <div class="tc-unidade">${t.unidade||"—"}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="tc-badge">${origemLabel[t._origem]||t._origem}</span>
+            ${badgeOcultoHtml}
+          </div>
+        </div>
+        <div class="tc-contatos">
+          ${linhaFixo}${linhaCel}${linhaEmail}${semContato}
+        </div>
+      </div>
+      ${footHtml}
+    </div>`;
+  }).join("");
+}
+
+// ── Modal novo/editar ─────────────────────
+window.abrirModalTelefone = () => {
+  if (!checkPermission("create")) {
+    toast("aviso", "Você não tem permissão para adicionar telefones úteis.");
+    return;
+  }
+  telEditandoId = null;
+  ["tf-nome","tf-unidade","tf-fixo","tf-celular","tf-email"].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value="";
+  });
+  const chkTel = document.getElementById("tf-oculto"); if(chkTel) chkTel.checked = false;
+  document.getElementById("err-tf-nome").textContent="";
+  document.getElementById("tel-modal-titulo").innerHTML='<i class="fas fa-phone-volume"></i> Novo Telefone Útil';
+  document.getElementById("tel-btn-salvar-txt").textContent="Salvar";
+  abrirModal("modal-telefone");
+};
+
+window.editarTelefone = (id) => {
+  if (!checkPermission("edit")) {
+    toast("aviso", "Você não tem permissão para editar telefones úteis.");
+    return;
+  }
+  const t = todosTelefones.find(x => x.id===id);
+  if (!t) return;
+  if (t._origem !== "man") { toast("aviso","Para editar este contato, acesse o cadastro original."); return; }
+  telEditandoId = id;
+  document.getElementById("tf-nome").value    = t.nome    ||"";
+  document.getElementById("tf-unidade").value = t.unidade ||"";
+  document.getElementById("tf-fixo").value    = t.fixo    ||"";
+  document.getElementById("tf-celular").value = t.celular ||"";
+  document.getElementById("tf-email").value   = t.email   ||"";
+  const chkTel = document.getElementById("tf-oculto"); if(chkTel) chkTel.checked = !!t.oculto;
+  document.getElementById("err-tf-nome").textContent="";
+  document.getElementById("tel-modal-titulo").innerHTML='<i class="fas fa-pen"></i> Editar Telefone Útil';
+  document.getElementById("tel-btn-salvar-txt").textContent="Atualizar";
+  abrirModal("modal-telefone");
+};
+
+window.salvarTelefone = async () => {
+  if (!checkPermission("create")) {
+    toast("erro", "Você não tem permissão para salvar telefones úteis.");
+    return;
+  }
+  const nome = document.getElementById("tf-nome").value.trim();
+  if (!nome) { document.getElementById("err-tf-nome").textContent="Nome obrigatório."; return; }
+  document.getElementById("err-tf-nome").textContent="";
+  const dados = {
+    nome,
+    unidade: document.getElementById("tf-unidade").value.trim(),
+    fixo:    document.getElementById("tf-fixo").value.trim(),
+    celular: document.getElementById("tf-celular").value.trim(),
+    email:   document.getElementById("tf-email").value.trim(),
+    oculto:  !!document.getElementById("tf-oculto")?.checked,
+    atualizadoEm: serverTimestamp()
+  };
+  mostrarLoading(true);
+  try {
+    if (telEditandoId) {
+      await updateDoc(doc(db,"telefonesUteis",telEditandoId), dados);
+      await logAction("Edição Telefone Útil", `Editou telefone útil: ${dados.nome}`);
+      toast("ok","Contato atualizado com sucesso.");
+    } else {
+      await addDoc(collection(db,"telefonesUteis"), dados);
+      await logAction("Criação Telefone Útil", `Criou telefone útil: ${dados.nome}`);
+      toast("ok","Contato adicionado aos telefones úteis.");
+    }
+    fecharModal("modal-telefone");
+    await carregarTelefones();
+  } catch(e) {
+    console.error(e);
+    toast("erro","Erro ao salvar contato.");
+  } finally { mostrarLoading(false); }
+};
+
+window.excluirTelefone = (id, nome) => {
+  if (!checkPermission("delete")) {
+    toast("erro", "Você não tem permissão para excluir telefones úteis.");
+    return;
+  }
+  document.getElementById("confirmar-msg").textContent = `Deseja excluir "${nome}" dos telefones úteis?`;
+  document.getElementById("btn-confirmar").onclick = async () => {
+    mostrarLoading(true);
+    try {
+      await deleteDoc(doc(db,"telefonesUteis",id));
+      await logAction("Exclusão Telefone Útil", `Excluiu telefone útil: ${nome}`);
+      toast("ok","Contato excluído.");
+      fecharModal("modal-confirmar");
+      await carregarTelefones();
+    } catch(e) {
+      toast("erro","Erro ao excluir.");
+    } finally { mostrarLoading(false); }
+  };
+  abrirModal("modal-confirmar");
+};
+
+/* ══════════════════════════
+   👁️ ATALHO RÁPIDO DE OCULTAR
+══════════════════════════ */
+window.alternarOcultarContato = async (id, colecao, novoStatus) => {
+  if (!checkPermission("admin")) {
+    toast("erro", "Apenas administradores podem alterar a visibilidade de cadastros.");
+    return;
+  }
+  mostrarLoading(true);
+  try {
+    await updateDoc(doc(db, colecao, id), {
+      oculto: novoStatus,
+      atualizadoEm: serverTimestamp()
+    });
+    await logAction("Visibilidade", `${novoStatus ? "Ocultou" : "Tornou visível"} o contato (${id}) na coleção ${colecao}`);
+    toast("ok", novoStatus ? "Contato oculto para usuários comuns." : "Contato visível para todos os usuários.");
+    if (colecao === "contatos") {
+      await carregarContatos();
+    } else {
+      await carregarTelefones();
+    }
+  } catch(e) {
+    console.error(e);
+    toast("erro", "Erro ao alterar visibilidade.");
+  } finally {
+    mostrarLoading(false);
+  }
+/* ══════════════════════════
+   📩 ENDEREÇAMENTOS MODULE
+══════════════════════════ */
+let todosEnderecos = [];
+let enderecosFiltrados = [];
+let filtroTipoEndereco = 'todos';
+let enderecoEditandoId = null;
+
+window.carregarEnderecos = async () => {
+  mostrarLoading(true);
+  try {
+    const snap = await getDocs(collection(db, "enderecos"));
+    todosEnderecos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    filtrarEnderecos(filtroTipoEndereco);
+  } catch(e) {
+    console.error("Erro ao carregar endereçamentos:", e);
+    toast("erro", "Erro ao carregar endereçamentos do banco de dados.");
+  } finally {
+    mostrarLoading(false);
+  }
+};
+
+window.filtrarEnderecos = (tipo) => {
+  filtroTipoEndereco = tipo;
+  document.querySelectorAll('#tela-enderecos .btn-filt-tipo').forEach(b => {
+    b.classList.toggle('ativo', b.getAttribute('onclick')?.includes(`'${tipo}'`));
+  });
+
+  const busca = (document.getElementById("end-busca")?.value || "").toLowerCase().trim();
+  
+  enderecosFiltrados = todosEnderecos.filter(item => {
+    const matchTipo = (tipo === 'todos' || item.tipo === tipo);
+    const texto = `${item.destinatario || ''} ${item.cargo || ''} ${item.orgao || ''} ${item.vocativo || ''}`.toLowerCase();
+    const matchBusca = !busca || texto.includes(busca);
+    return matchTipo && matchBusca;
+  });
+
+  renderizarGridEnderecos();
+};
+
+window.limparBuscaEnd = () => {
+  const el = document.getElementById("end-busca");
+  if (el) el.value = "";
+  filtrarEnderecos(filtroTipoEndereco);
+};
+
+function renderizarGridEnderecos() {
+  const container = document.getElementById("enderecos-container");
+  if (!container) return;
+
+  if (!enderecosFiltrados.length) {
+    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <i class="fas fa-folder-open"></i>
+      <h3>Nenhum endereçamento encontrado</h3>
+      <p>Tente ajustar os filtros ou adicione um novo endereçamento.</p>
+    </div>`;
+    return;
+  }
+
+  const canEdit = checkPermission("edit");
+  const canDelete = checkPermission("delete");
+
+  container.innerHTML = enderecosFiltrados.map(item => {
+    const isSimples = item.tipo === 'simples';
+    const badgeHtml = isSimples 
+      ? `<span class="badge badge-simples" style="background:rgba(79,70,229,0.1);color:var(--primary);padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;">Ofício Simples</span>`
+      : `<span class="badge badge-circular" style="background:rgba(16,185,129,0.1);color:var(--green);padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;">Ofício Circular</span>`;
+
+    let corpoTexto = '';
+    if (isSimples) {
+      corpoTexto = `
+        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px">
+          <div><strong>${item.vocativo || ''}</strong></div>
+          <div style="font-weight:700;color:var(--g900)">${item.destinatario || ''}</div>
+          <div>${item.cargo || ''}</div>
+          <div style="color:var(--g500)">${item.orgao || ''}</div>
+          ${item.endereco ? `<div style="font-size:12px;color:var(--g500);margin-top:4px"><i class="fas fa-location-dot"></i> ${item.endereco}</div>` : ''}
+          ${item.cepCidade ? `<div style="font-size:12px;color:var(--g500)">${item.cepCidade}</div>` : ''}
+        </div>
+      `;
+    } else {
+      corpoTexto = `
+        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px">
+          <div><strong>Vocativo:</strong> ${item.vocativo || ''}</div>
+          <div><strong>Endereçamento:</strong> ${item.destinatario || ''}</div>
+          ${item.localData ? `<div style="font-size:12px;color:var(--g500);margin-top:4px"><i class="fas fa-calendar"></i> ${item.localData}</div>` : ''}
+        </div>
+      `;
     }
 
-    function escapeHtml(str) { return str.replace(/`/g, '\\`').replace(/\${/g, '\\${'); }
-    function exibirToast(msg) {
-      const t = document.getElementById('toast');
-      document.getElementById('toast-msg').innerText = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3000);
+    const btnEditar = canEdit ? `<button class="tc-btn edit" onclick="editarEndereco('${item.id}')"><i class="fas fa-pen"></i> Editar</button>` : '';
+    const btnExcluir = canDelete ? `<button class="tc-btn del" onclick="excluirEndereco('${item.id}')"><i class="fas fa-trash"></i> Excluir</button>` : '';
+    const btnCopiar = `<button class="tc-btn" style="background:var(--g100);color:var(--g700)" onclick="copiarEnderecoCard('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Texto</button>`;
+
+    return `
+      <div class="card-endereco" style="background:#fff;border:1px solid var(--g200);border-radius:12px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            ${badgeHtml}
+          </div>
+          ${corpoTexto}
+        </div>
+        <div class="tc-foot" style="display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--g100)">
+          ${btnCopiar}
+          ${btnEditar}
+          ${btnExcluir}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.abrirFormEndereco = (id = null) => {
+  if (!checkPermission("create")) {
+    toast("aviso", "Você não tem permissão para cadastrar ou editar endereçamentos.");
+    return;
+  }
+  enderecoEditandoId = id;
+  const form = document.getElementById("form-endereco");
+  if (form) form.reset();
+
+  if (id) {
+    const item = todosEnderecos.find(x => x.id === id);
+    if (item) {
+      document.getElementById("end-form-titulo").textContent = "Editar Endereçamento";
+      document.getElementById("end-tipo").value = item.tipo || "simples";
+      document.getElementById("end-vocativo").value = item.vocativo || "";
+      document.getElementById("end-destinatario").value = item.destinatario || "";
+      document.getElementById("end-cargo").value = item.cargo || "";
+      document.getElementById("end-orgao").value = item.orgao || "";
+      document.getElementById("end-endereco").value = item.endereco || "";
+      document.getElementById("end-cep-cidade").value = item.cepCidade || "";
+      document.getElementById("end-local-data").value = item.localData || "";
     }
-  </script>
-</body>
-</html>
+  } else {
+    document.getElementById("end-form-titulo").textContent = "Novo Endereçamento";
+  }
+
+  alternarCamposTipoForm();
+  irPara("cad-endereco");
+};
+
+window.alternarCamposTipoForm = () => {
+  const tipo = document.getElementById("end-tipo").value;
+  const isSimples = tipo === "simples";
+
+  document.querySelectorAll(".campo-simples").forEach(el => el.style.display = isSimples ? "block" : "none");
+  document.querySelectorAll(".campo-circular").forEach(el => el.style.display = isSimples ? "none" : "block");
+
+  atualizarPreviewEndereco();
+};
+
+window.atualizarPreviewEndereco = () => {
+  const tipo = document.getElementById("end-tipo").value;
+  const vocativo = document.getElementById("end-vocativo").value.trim();
+  const destinatario = document.getElementById("end-destinatario").value.trim();
+  const cargo = document.getElementById("end-cargo").value.trim();
+  const orgao = document.getElementById("end-orgao").value.trim();
+  const endereco = document.getElementById("end-endereco").value.trim();
+  const cepCidade = document.getElementById("end-cep-cidade").value.trim();
+  const localData = document.getElementById("end-local-data").value.trim();
+
+  const box = document.getElementById("preview-box-endereco");
+  if (!box) return;
+
+  if (tipo === "simples") {
+    box.innerHTML = `
+      <div>${vocativo ? vocativo + "<br>" : ""}</div>
+      <div style="font-weight:700">${destinatario || "Nome do Destinatário"}</div>
+      <div>${cargo || "Cargo"}</div>
+      <div>${orgao || "Órgão / Entidade"}</div>
+      <div>${endereco || "Endereço"}</div>
+      <div>${cepCidade || "CEP - Cidade/UF"}</div>
+    `;
+  } else {
+    box.innerHTML = `
+      <div><strong>Vocativo:</strong> ${vocativo || "Ex: A Sua Excelência o Senhor"}</div>
+      <div><strong>Endereçamento:</strong> ${destinatario || "Ex: Senhores Membros / Excelentíssimos Desembargadores"}</div>
+      ${localData ? `<div><strong>Local/Data:</strong> ${localData}</div>` : ""}
+    `;
+  }
+};
+
+window.salvarEndereco = async (e) => {
+  if (e) e.preventDefault();
+  if (!checkPermission("create")) {
+    toast("erro", "Sem permissão para salvar endereçamentos.");
+    return;
+  }
+
+  const tipo = document.getElementById("end-tipo").value;
+  const destinatario = document.getElementById("end-destinatario").value.trim();
+  if (!destinatario) {
+    toast("aviso", "Preencha o campo Destinatário / Endereçamento.");
+    return;
+  }
+
+  const dados = {
+    tipo,
+    vocativo: document.getElementById("end-vocativo").value.trim(),
+    destinatario,
+    cargo: document.getElementById("end-cargo").value.trim(),
+    orgao: document.getElementById("end-orgao").value.trim(),
+    endereco: document.getElementById("end-endereco").value.trim(),
+    cepCidade: document.getElementById("end-cep-cidade").value.trim(),
+    localData: document.getElementById("end-local-data").value.trim(),
+    atualizadoEm: serverTimestamp()
+  };
+
+  mostrarLoading(true);
+  try {
+    if (enderecoEditandoId) {
+      await updateDoc(doc(db, "enderecos", enderecoEditandoId), dados);
+      await logAction("Edição Endereçamento", `Editou endereçamento: ${destinatario}`);
+      toast("ok", "Endereçamento atualizado com sucesso!");
+    } else {
+      await addDoc(collection(db, "enderecos"), dados);
+      await logAction("Criação Endereçamento", `Criou endereçamento: ${destinatario}`);
+      toast("ok", "Endereçamento cadastrado com sucesso!");
+    }
+    irPara("enderecos");
+  } catch(err) {
+    console.error("Erro ao salvar endereçamento:", err);
+    toast("erro", "Erro ao salvar endereçamento.");
+  } finally {
+    mostrarLoading(false);
+  }
+};
+
+window.editarEndereco = (id) => {
+  abrirFormEndereco(id);
+};
+
+window.excluirEndereco = (id) => {
+  if (!checkPermission("delete")) {
+    toast("erro", "Você não tem permissão para excluir endereçamentos.");
+    return;
+  }
+  const item = todosEnderecos.find(x => x.id === id);
+  const nome = item ? item.destinatario : "este item";
+
+  document.getElementById("confirmar-msg").textContent = `Deseja excluir o endereçamento de "${nome}"?`;
+  document.getElementById("btn-confirmar").onclick = async () => {
+    mostrarLoading(true);
+    try {
+      await deleteDoc(doc(db, "enderecos", id));
+      await logAction("Exclusão Endereçamento", `Excluiu endereçamento: ${nome}`);
+      toast("ok", "Endereçamento excluído.");
+      fecharModal("modal-confirmar");
+      await carregarEnderecos();
+    } catch(e) {
+      console.error(e);
+      toast("erro", "Erro ao excluir endereçamento.");
+    } finally {
+      mostrarLoading(false);
+    }
+  };
+  abrirModal("modal-confirmar");
+};
+
+window.copiarEnderecoCard = (id, btnEl) => {
+  const item = todosEnderecos.find(x => x.id === id);
+  if (!item) return;
+
+  let texto = "";
+  if (item.tipo === "simples") {
+    texto = [item.vocativo, item.destinatario, item.cargo, item.orgao, item.endereco, item.cepCidade].filter(Boolean).join("\n");
+  } else {
+    texto = [item.vocativo, item.destinatario, item.localData].filter(Boolean).join("\n");
+  }
+
+  copiarTexto(texto, btnEl);
+};
+
+</script>
