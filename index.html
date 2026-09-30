@@ -3075,33 +3075,29 @@ window.carregarEnderecos = async () => {
     const itensPadrao = [
       {
         tipo: 'simples',
-        vocativo: 'A Sua Excelência o Senhor',
-        destinatario: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
-        cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
-        orgao: 'Tribunal de Justiça do Estado de Goiás',
-        endereco: '',
-        cepCidade: '',
+        vocativo: 'A Sua Excelência a Senhora',
+        nome: 'Desembargadora ROZANA FERNANDES CAMAPUM',
+        destinatario: 'Desembargadora ROZANA FERNANDES CAMAPUM',
+        cargo: '2ª Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
+        orgao: '',
+        local: 'N E S T A',
         localData: 'N E S T A'
       },
       {
         tipo: 'simples',
-        vocativo: 'A Sua Excelência a Senhora',
-        destinatario: 'Desembargadora ALICE TELES DE OLIVEIRA',
-        cargo: 'Coordenadora Estadual da Mulher em Situação de Violência Doméstica e Familiar',
+        vocativo: 'A Sua Excelência o Senhor',
+        nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
+        destinatario: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
+        cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
         orgao: 'Tribunal de Justiça do Estado de Goiás',
-        endereco: '',
-        cepCidade: '',
+        local: 'N E S T A',
         localData: 'N E S T A'
       },
       {
         tipo: 'circular',
-        vocativo: 'Excelentíssimos Senhores Diretores e Excelentíssimas Senhoras Diretoras',
-        destinatario: 'Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás',
-        cargo: 'Diretores do Foro',
-        orgao: '',
-        endereco: '',
-        cepCidade: '',
-        localData: ''
+        vocativo: '',
+        textoCircular: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás',
+        destinatario: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás'
       }
     ];
 
@@ -3117,15 +3113,25 @@ window.carregarEnderecos = async () => {
     } else {
       todosEnderecos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Garante que se faltar a Desembargadora Alice, adiciona automaticamente no banco
-      const jaTemAlice = todosEnderecos.some(e => (e.destinatario || e.nome || '').toUpperCase().includes('ALICE TELES'));
-      if (!jaTemAlice) {
-        const itemAlice = itensPadrao[1];
+      // Garante que se faltar a Desembargadora Rozana ou Ofício Circular de Magistrados, adiciona automaticamente no banco
+      const jaTemRozana = todosEnderecos.some(e => (e.destinatario || e.nome || '').toUpperCase().includes('ROZANA'));
+      if (!jaTemRozana) {
+        const itemRozana = itensPadrao[0];
         const refDoc = await addDoc(collection(db, "enderecos"), {
-          ...itemAlice,
+          ...itemRozana,
           criadoEm: serverTimestamp()
         });
-        todosEnderecos.push({ id: refDoc.id, ...itemAlice });
+        todosEnderecos.push({ id: refDoc.id, ...itemRozana });
+      }
+
+      const jaTemMagistrados = todosEnderecos.some(e => (e.textoCircular || e.destinatario || '').toUpperCase().includes('MAGISTRADOS'));
+      if (!jaTemMagistrados) {
+        const itemMagistrados = itensPadrao[2];
+        const refDoc = await addDoc(collection(db, "enderecos"), {
+          ...itemMagistrados,
+          criadoEm: serverTimestamp()
+        });
+        todosEnderecos.push({ id: refDoc.id, ...itemMagistrados });
       }
     }
 
@@ -3186,22 +3192,30 @@ function renderizarGridEnderecos() {
 
     let corpoTexto = '';
     if (isSimples) {
+      const voc = item.vocativo || '';
+      const nome = item.nome || item.destinatario || '';
+      const cargo = item.cargo || '';
+      const orgao = (item.orgao && item.orgao.trim() !== '') ? item.orgao : '';
+      const local = item.local || item.localData || '';
+
+      const linhasHtml = [
+        voc ? `<div>${voc}</div>` : '',
+        nome ? `<div style="font-weight:700;color:var(--g900)">${nome}</div>` : '',
+        cargo ? `<div>${cargo}</div>` : '',
+        orgao ? `<div>${orgao}</div>` : '',
+        local ? `<div>${local}</div>` : ''
+      ].filter(Boolean).join('');
+
       corpoTexto = `
-        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px">
-          <div><strong>${item.vocativo || ''}</strong></div>
-          <div style="font-weight:700;color:var(--g900)">${item.destinatario || ''}</div>
-          <div>${item.cargo || ''}</div>
-          <div style="color:var(--g500)">${item.orgao || ''}</div>
-          ${item.endereco ? `<div style="font-size:12px;color:var(--g500);margin-top:4px"><i class="fas fa-location-dot"></i> ${item.endereco}</div>` : ''}
-          ${item.cepCidade ? `<div style="font-size:12px;color:var(--g500)">${item.cepCidade}</div>` : ''}
+        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px;white-space:pre-line">
+          ${linhasHtml}
         </div>
       `;
     } else {
+      const txtCircular = item.textoCircular || item.destinatario || '';
       corpoTexto = `
         <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px">
-          <div><strong>Vocativo:</strong> ${item.vocativo || ''}</div>
-          <div><strong>Endereçamento:</strong> ${item.destinatario || ''}</div>
-          ${item.localData ? `<div style="font-size:12px;color:var(--g500);margin-top:4px"><i class="fas fa-calendar"></i> ${item.localData}</div>` : ''}
+          ${txtCircular}
         </div>
       `;
     }
