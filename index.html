@@ -3071,7 +3071,45 @@ window.carregarEnderecos = async () => {
   mostrarLoading(true);
   try {
     const snap = await getDocs(collection(db, "enderecos"));
-    todosEnderecos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Se a coleção no banco estiver vazia, cria os modelos padrões oficiais
+    if (snap.empty) {
+      const itensPadrao = [
+        {
+          tipo: 'simples',
+          vocativo: 'A Sua Excelência o Senhor',
+          destinatario: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
+          cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
+          orgao: 'Tribunal de Justiça do Estado de Goiás',
+          endereco: '',
+          cepCidade: '',
+          localData: 'N E S T A'
+        },
+        {
+          tipo: 'circular',
+          vocativo: 'Excelentíssimos Senhores Diretores e Excelentíssimas Senhoras Diretoras',
+          destinatario: 'Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás',
+          cargo: 'Diretores do Foro',
+          orgao: '',
+          endereco: '',
+          cepCidade: '',
+          localData: ''
+        }
+      ];
+
+      for (const item of itensPadrao) {
+        await addDoc(collection(db, "enderecos"), {
+          ...item,
+          criadoEm: serverTimestamp()
+        });
+      }
+
+      const snapNovo = await getDocs(collection(db, "enderecos"));
+      todosEnderecos = snapNovo.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } else {
+      todosEnderecos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
     filtrarEnderecos(filtroTipoEndereco);
   } catch(e) {
     console.error("Erro ao carregar endereçamentos:", e);
