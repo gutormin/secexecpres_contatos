@@ -1260,7 +1260,7 @@
       <div class="consulta-search-row">
         <div class="search-box" style="flex:1">
           <i class="fas fa-search"></i>
-          <input type="text" id="input-busca-end" placeholder="Buscar por autoridade, cargo, órgão ou texto..." oninput="filtrarEnderecos(filtroTipoEndereco)"/>
+          <input type="text" id="input-busca-end" placeholder="Buscar por autoridade, cargo, órgão ou texto..." oninput="window.filtrarEnderecos()" onkeyup="window.filtrarEnderecos()" onchange="window.filtrarEnderecos()"/>
         </div>
       </div>
       <div class="consulta-filters">
@@ -3178,12 +3178,16 @@ window.carregarEnderecos = async () => {
 };
 
 window.filtrarEnderecos = (tipo) => {
-  if (tipo) filtroTipoEndereco = tipo;
+  if (tipo && typeof tipo === 'string') {
+    filtroTipoEndereco = tipo;
+  }
   paginaAtualEnderecos = 1;
 
   document.querySelectorAll('#tela-enderecos .btn-filt-tipo').forEach(b => {
-    const isTarget = b.getAttribute('onclick')?.includes(`'${filtroTipoEndereco}'`);
+    const onclickAttr = b.getAttribute('onclick') || '';
+    const isTarget = onclickAttr.includes(`'${filtroTipoEndereco}'`);
     b.classList.toggle('ativo-todos', isTarget);
+    b.classList.toggle('ativo', isTarget);
   });
 
   const buscaRaw = (document.getElementById("input-busca-end")?.value || "").trim();
@@ -3192,7 +3196,19 @@ window.filtrarEnderecos = (tipo) => {
   enderecosFiltrados = todosEnderecos.filter(item => {
     const matchTipo = (filtroTipoEndereco === 'todos' || item.tipo === filtroTipoEndereco);
     
-    const textoBruto = `${item.vocativo || ''} ${item.nome || ''} ${item.destinatario || ''} ${item.cargo || ''} ${item.orgao || ''} ${item.local || ''} ${item.localData || ''} ${item.textoCircular || ''}`;
+    const textoBruto = [
+      item.vocativo,
+      item.nome,
+      item.destinatario,
+      item.cargo,
+      item.orgao,
+      item.local,
+      item.localData,
+      item.textoCircular,
+      item.endereco,
+      item.cepCidade
+    ].filter(Boolean).join(" ");
+
     const textoNormalizado = textoBruto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     
     const matchBusca = !busca || textoNormalizado.includes(busca);
