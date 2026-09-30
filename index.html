@@ -1250,7 +1250,10 @@
           <p>Cabeçalhos oficiais para expedição de Ofícios Simples e Circulares</p>
         </div>
       </div>
-      <button class="btn-pri hidden" id="btn-novo-endereco" onclick="abrirFormEndereco()"><i class="fas fa-plus"></i> Novo Endereçamento</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-sec hidden" id="btn-importar-enderecos" onclick="abrirModalImportarEnderecos()"><i class="fas fa-file-import"></i> Importar em Lote</button>
+        <button class="btn-pri hidden" id="btn-novo-endereco" onclick="abrirFormEndereco()"><i class="fas fa-plus"></i> Novo Endereçamento</button>
+      </div>
     </div>
 
     <div class="consulta-toolbar">
@@ -1511,6 +1514,31 @@
   </div>
 </div>
 
+<!-- MODAL: IMPORTAR ENDEREÇAMENTOS EM LOTE -->
+<div id="modal-importar-enderecos" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width: 680px; height: auto; max-height: 90vh;">
+    <div class="ver-stripe" style="background: var(--primary);"></div>
+    <div class="modal-head">
+      <h3><i class="fas fa-file-import"></i> Importar Endereçamentos em Lote</h3>
+      <button class="modal-close" onclick="fecharModal('modal-importar-enderecos')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex; flex-direction:column; gap:16px;">
+      <p style="font-size:13px; color:var(--g600); line-height:1.5;">
+        Cole abaixo a lista de endereçamentos (texto colado ou de arquivo .txt/.doc). O sistema irá identificar automaticamente os blocos e cadastrar cada um individualmente no banco de dados.
+      </p>
+      <div class="fgroup">
+        <label for="import-enderecos-txt">Texto dos Endereçamentos</label>
+        <textarea id="import-enderecos-txt" rows="12" placeholder="Cole aqui o texto dos endereçamentos..." style="width:100%; padding:12px; border:1.5px solid var(--g200); border-radius:var(--radius-sm); font-size:13px; font-family:var(--font); line-height:1.5; resize:vertical;"></textarea>
+      </div>
+      <div id="import-preview-status" style="font-size:12px; font-weight:700; color:var(--primary);"></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn-sec" onclick="fecharModal('modal-importar-enderecos')"><i class="fas fa-times"></i> Cancelar</button>
+      <button type="button" class="btn-pri" onclick="processarImportacaoEnderecos()"><i class="fas fa-cloud-arrow-up"></i> Processar e Cadastrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast-wrap"></div>
 
@@ -1580,6 +1608,7 @@ function atualizarInterfacePermissoes() {
   document.getElementById("btn-nav-cad-com").classList.toggle("hidden", !canCreate);
   document.getElementById("btn-nav-cad-ext").classList.toggle("hidden", !canCreate);
   document.getElementById("btn-novo-endereco")?.classList.toggle("hidden", !canCreate);
+  document.getElementById("btn-importar-enderecos")?.classList.toggle("hidden", !canCreate);
   
   // Guard button elements inside screens
   const btnNovoTel = document.querySelector(".btn-pri[onclick='abrirModalTelefone()']");
@@ -3414,6 +3443,141 @@ window.copiarEnderecoCard = (id, btnEl) => {
   }
 
   copiarTexto(texto, btnEl);
+};
+
+/* ══════════════════════════
+   📥 IMPORTAÇÃO EM LOTE DE ENDEREÇAMENTOS
+══════════════════════════ */
+window.abrirModalImportarEnderecos = () => {
+  if (!checkPermission("create")) {
+    toast("aviso", "Você não tem permissão para importar endereçamentos.");
+    return;
+  }
+  const txtArea = document.getElementById("import-enderecos-txt");
+  if (txtArea) txtArea.value = "";
+  const statusEl = document.getElementById("import-preview-status");
+  if (statusEl) statusEl.textContent = "";
+  abrirModal("modal-importar-enderecos");
+};
+
+window.processarImportacaoEnderecos = async () => {
+  if (!checkPermission("create")) {
+    toast("erro", "Sem permissão para realizar importação.");
+    return;
+  }
+
+  const rawText = document.getElementById("import-enderecos-txt").value.trim();
+  if (!rawText) {
+    toast("aviso", "Cole o texto contendo os endereçamentos para importar.");
+    return;
+  }
+
+  mostrarLoading(true);
+  try {
+    const linhas = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+    const blocos = [];
+    let blocoAtual = [];
+
+    for (const linha of linhas) {
+      // Ignorar cabeçalhos descritivos comuns
+      if (linha.toLowerCase().startsWith("endereçamentos") || linha.toLowerCase().startsWith("fonte:")) {
+        continue;
+      }
+      
+      // Se a linha for o início de um novo vocativo ("A Sua Excelência", "À Sua Excelência", "Ao Excelentíssimo", "Às Excelentíssimas")
+      const ehInicioVocativo = /^(a\s+sua\s+excelência|à\s+sua\s+excelência|ao\s+excelentíssimo|às\s+excelentíssimas|excelentíssimo|excelentíssimos|excelentíssimas)/i.test(linha);
+
+      if (ehInicioVocativo && blocoAtual.length > 0) {
+        blocos.push(blocoAtual);
+        blocoAtual = [];
+      }
+      
+      blocoAtual.push(linha);
+
+      // Se a linha for "N E S T A" ou terminar com um nome de cidade/estado, fecha o bloco
+      if (/^n\s*e\s*s\s*t\s*a$/i.test(linha)) {
+        blocos.push(blocoAtual);
+        blocoAtual = [];
+      }
+    }
+
+    if (blocoAtual.length > 0) {
+      blocos.push(blocoAtual);
+    }
+
+    if (!blocos.length) {
+      toast("aviso", "Nenhum endereçamento válido pôde ser identificado no texto.");
+      return;
+    }
+
+    let batch = writeBatch(db);
+    let count = 0;
+    let totalCadastrados = 0;
+
+    for (const b of blocos) {
+      // Determina se é simples ou circular
+      const textoCompleto = b.join("\n");
+      const ehSimples = b.some(l => /^n\s*e\s*s\s*t\s*a$/i.test(l)) || b.length >= 3;
+      
+      let dados = {};
+      if (ehSimples && b.length >= 3) {
+        const vocativo = b[0] || "A Sua Excelência";
+        const nome = b[1] || "";
+        const cargo = b[2] || "";
+        const local = b[b.length - 1] || "N E S T A";
+        let orgao = "";
+        if (b.length > 4) {
+          orgao = b.slice(3, b.length - 1).join(" ");
+        }
+
+        dados = {
+          tipo: "simples",
+          vocativo,
+          nome,
+          destinatario: nome,
+          cargo,
+          orgao,
+          local,
+          localData: local,
+          criadoEm: serverTimestamp()
+        };
+      } else {
+        dados = {
+          tipo: "circular",
+          vocativo: "",
+          textoCircular: textoCompleto,
+          destinatario: textoCompleto,
+          criadoEm: serverTimestamp()
+        };
+      }
+
+      const newRef = doc(collection(db, "enderecos"));
+      batch.set(newRef, dados);
+      count++;
+      totalCadastrados++;
+
+      if (count === 400) {
+        await batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+
+    await logAction("Importação em Lote Endereçamentos", `Importou ${totalCadastrados} endereçamentos automaticamente.`);
+    toast("ok", `${totalCadastrados} endereçamentos importados com sucesso!`);
+    fecharModal("modal-importar-enderecos");
+    await carregarEnderecos();
+
+  } catch(e) {
+    console.error("Erro na importação em lote:", e);
+    toast("erro", "Erro ao importar endereçamentos: " + e.message);
+  } finally {
+    mostrarLoading(false);
+  }
 };
 
 </script>
