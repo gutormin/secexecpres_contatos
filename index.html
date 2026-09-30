@@ -160,6 +160,8 @@
     .btn-copy:hover { background:var(--green); color:white; }
     .btn-action-sm { background:var(--g100); color:var(--g700); border:none; padding:8px 12px; border-radius:var(--radius-xs); font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:4px; transition:all var(--trans); }
     .btn-action-sm:hover { background:var(--g200); }
+    .btn-action-sm.edit { background:var(--primary-l); color:var(--primary); }
+    .btn-action-sm.edit:hover { background:var(--primary-m); }
     .btn-action-sm.del { background:var(--red-l); color:var(--red); }
     .btn-action-sm.del:hover { background:var(--red); color:white; }
 
@@ -300,14 +302,14 @@
         <div class="enderecos-grid" id="container-enderecos"></div>
       </div>
 
-      <!-- TELA CADASTRO DE ENDEREÇAMENTO (SOMENTE ADM) -->
+      <!-- TELA CADASTRO / EDIÇÃO DE ENDEREÇAMENTO (SOMENTE ADM) -->
       <div id="tela-cad-endereco" class="tela">
         <div class="tela-header">
           <div class="tela-header-left">
             <button class="btn-voltar" onclick="navegarPara('tela-enderecos')"><i class="fa-solid fa-arrow-left"></i></button>
             <div class="tela-titulo">
               <h2 id="form-end-titulo">Novo Endereçamento</h2>
-              <p>Cadastre um modelo oficial de endereçamento para expedição de ofício</p>
+              <p>Cadastre ou edite um modelo oficial de endereçamento para expedição de ofício</p>
             </div>
           </div>
         </div>
@@ -482,10 +484,13 @@
       if (idTela === 'tela-telefones') document.getElementById('nav-telefones').classList.add('ativo');
 
       if (idTela === 'tela-enderecos') renderizarEnderecos();
-      if (idTela === 'tela-cad-endereco') limparFormulario();
+      if (idTela === 'tela-cad-endereco' && !document.getElementById('end-id').value) {
+        limparFormulario();
+      }
     }
 
     function limparFormulario() {
+      document.getElementById('form-end-titulo').innerText = 'Novo Endereçamento';
       document.getElementById('form-endereco').reset();
       document.getElementById('end-id').value = '';
       alternarCamposTipoForm();
@@ -535,11 +540,42 @@
             <div class="end-card-body">${texto}</div>
             <div class="end-card-actions">
               <button class="btn-copy" onclick="copiarTexto(\`${escapeHtml(texto)}\`)"><i class="fa-solid fa-copy"></i> Copiar</button>
-              ${estado.ehAdmin ? `<button class="btn-action-sm del" onclick="excluirEndereco(${item.id})"><i class="fa-solid fa-trash"></i> Excluir</button>` : ''}
+              ${estado.ehAdmin ? `
+                <button class="btn-action-sm edit" onclick="editarEndereco(${item.id})"><i class="fa-solid fa-pen"></i> Editar</button>
+                <button class="btn-action-sm del" onclick="excluirEndereco(${item.id})"><i class="fa-solid fa-trash"></i> Excluir</button>
+              ` : ''}
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    function editarEndereco(id) {
+      if (!estado.ehAdmin) {
+        exibirToast('Apenas administradores podem editar.');
+        return;
+      }
+      const item = estado.enderecos.find(i => i.id === id);
+      if (!item) return;
+
+      document.getElementById('form-end-titulo').innerText = 'Editar Endereçamento';
+      document.getElementById('end-id').value = item.id;
+      document.getElementById('end-tipo').value = item.tipo;
+
+      alternarCamposTipoForm();
+
+      if (item.tipo === 'simples') {
+        document.getElementById('end-vocativo').value = item.vocativo || '';
+        document.getElementById('end-nome').value = item.nome || '';
+        document.getElementById('end-cargo').value = item.cargo || '';
+        document.getElementById('end-orgao').value = item.orgao || '';
+        document.getElementById('end-local').value = item.local || '';
+      } else {
+        document.getElementById('end-texto-circular').value = item.textoCircular || '';
+      }
+
+      atualizarPreview();
+      navegarPara('tela-cad-endereco');
     }
 
     function excluirEndereco(id) {
@@ -598,11 +634,13 @@
     function salvarEndereco(e) {
       e.preventDefault();
       if (!estado.ehAdmin) {
-        exibirToast('Apenas administradores podem cadastrar.');
+        exibirToast('Apenas administradores podem cadastrar ou editar.');
         return;
       }
+      const id = document.getElementById('end-id').value;
       const tipo = document.getElementById('end-tipo').value;
-      let obj = { id: Date.now(), tipo };
+      
+      let obj = { id: id ? Number(id) : Date.now(), tipo };
       if (tipo === 'simples') {
         obj.vocativo = document.getElementById('end-vocativo').value;
         obj.nome = document.getElementById('end-nome').value;
@@ -612,9 +650,17 @@
       } else {
         obj.textoCircular = document.getElementById('end-texto-circular').value;
       }
-      estado.enderecos.push(obj);
+
+      if (id) {
+        const index = estado.enderecos.findIndex(item => item.id === Number(id));
+        if (index !== -1) estado.enderecos[index] = obj;
+        exibirToast('Endereçamento alterado com sucesso!');
+      } else {
+        estado.enderecos.push(obj);
+        exibirToast('Endereçamento cadastrado com sucesso!');
+      }
+
       salvarDadosNuvem();
-      exibirToast('Endereçamento salvo com sucesso!');
       navegarPara('tela-enderecos');
     }
 
