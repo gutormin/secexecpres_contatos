@@ -63,9 +63,12 @@
     .topbar-user {
       display:flex; align-items:center; gap:8px;
       padding:4px 10px; border-radius:8px; background:rgba(255,255,255,.08);
-      color:white; font-size:12px; font-weight:600;
+      color:white; font-size:12px; font-weight:600; cursor:pointer;
     }
     .user-av { width:28px; height:28px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px; }
+    .user-badge { font-size:10px; padding:2px 6px; border-radius:10px; font-weight:800; text-transform:uppercase; margin-left:4px; }
+    .user-badge.admin { background:#EF4444; color:white; }
+    .user-badge.user  { background:#3B82F6; color:white; }
 
     /* TELAS */
     .app-wrap { padding-top:64px; min-height:100vh; }
@@ -185,9 +188,10 @@
         <button class="topbar-btn" id="nav-enderecos" onclick="navegarPara('tela-enderecos')"><i class="fa-solid fa-envelope-open-text"></i> Endereçamentos</button>
         <button class="topbar-btn" id="nav-telefones" onclick="navegarPara('tela-telefones')"><i class="fa-solid fa-phone"></i> Tel. Úteis</button>
         <div class="topbar-divider"></div>
-        <div class="topbar-user">
-          <div class="user-av">AD</div>
-          <span>Administrador (ADMIN)</span>
+        <div class="topbar-user" onclick="alternarPerfilAdmin()" title="Clique para alternar o perfil de acesso">
+          <div class="user-av" id="user-av">AD</div>
+          <span id="user-name">Administrador</span>
+          <span class="user-badge admin" id="user-role-badge">ADMIN</span>
         </div>
       </div>
     </div>
@@ -267,7 +271,7 @@
               <p>Cabeçalhos oficiais para expedição de Ofícios Simples e Circulares</p>
             </div>
           </div>
-          <button class="btn-pri" onclick="navegarPara('tela-cad-endereco')"><i class="fa-solid fa-plus"></i> Novo Endereçamento</button>
+          <button class="btn-pri adm-only" onclick="navegarPara('tela-cad-endereco')"><i class="fa-solid fa-plus"></i> Novo Endereçamento</button>
         </div>
 
         <div class="toolbar-box">
@@ -287,7 +291,7 @@
         <div class="enderecos-grid" id="container-enderecos"></div>
       </div>
 
-      <!-- TELA CADASTRO DE ENDEREÇAMENTO -->
+      <!-- TELA CADASTRO DE ENDEREÇAMENTO (SOMENTE ADM) -->
       <div id="tela-cad-endereco" class="tela">
         <div class="tela-header">
           <div class="tela-header-left">
@@ -348,6 +352,7 @@
 
   <script>
     let estado = {
+      ehAdmin: true, // Define se é admin (true) ou consulta pública (false)
       filtroTipo: 'todos',
       enderecos: [
         {
@@ -367,9 +372,45 @@
       ]
     };
 
-    document.addEventListener('DOMContentLoaded', () => { renderizarEnderecos(); });
+    document.addEventListener('DOMContentLoaded', () => { 
+      atualizarControleAcesso();
+      renderizarEnderecos(); 
+    });
+
+    function alternarPerfilAdmin() {
+      estado.ehAdmin = !estado.ehAdmin;
+      atualizarControleAcesso();
+      renderizarEnderecos();
+      exibirToast(estado.ehAdmin ? 'Perfil alterado para ADMINISTRADOR' : 'Perfil alterado para CONSULTA (Visitante)');
+    }
+
+    function atualizarControleAcesso() {
+      const btnNovo = document.querySelector('.adm-only');
+      const badgeRole = document.getElementById('user-role-badge');
+      const userName = document.getElementById('user-name');
+      const userAv = document.getElementById('user-av');
+
+      if (estado.ehAdmin) {
+        if (btnNovo) btnNovo.classList.remove('hidden');
+        badgeRole.innerText = 'ADMIN';
+        badgeRole.className = 'user-badge admin';
+        userName.innerText = 'Administrador';
+        userAv.innerText = 'AD';
+      } else {
+        if (btnNovo) btnNovo.classList.add('hidden');
+        badgeRole.innerText = 'CONSULTA';
+        badgeRole.className = 'user-badge user';
+        userName.innerText = 'Usuário Consulta';
+        userAv.innerText = 'US';
+      }
+    }
 
     function navegarPara(idTela, filtro = null) {
+      if (idTela === 'tela-cad-endereco' && !estado.ehAdmin) {
+        exibirToast('Acesso restrito a Administradores.');
+        return;
+      }
+
       document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
       document.getElementById(idTela).classList.add('ativa');
 
@@ -426,7 +467,7 @@
             <div class="end-card-body">${texto}</div>
             <div class="end-card-actions">
               <button class="btn-copy" onclick="copiarTexto(\`${escapeHtml(texto)}\`)"><i class="fa-solid fa-copy"></i> Copiar</button>
-              <button class="btn-action-sm del" onclick="excluirEndereco(${item.id})"><i class="fa-solid fa-trash"></i> Excluir</button>
+              ${estado.ehAdmin ? `<button class="btn-action-sm del" onclick="excluirEndereco(${item.id})"><i class="fa-solid fa-trash"></i> Excluir</button>` : ''}
             </div>
           </div>
         `;
@@ -434,6 +475,10 @@
     }
 
     function excluirEndereco(id) {
+      if (!estado.ehAdmin) {
+        exibirToast('Apenas administradores podem excluir.');
+        return;
+      }
       if (confirm('Deseja realmente excluir este modelo de endereçamento?')) {
         estado.enderecos = estado.enderecos.filter(item => item.id !== id);
         renderizarEnderecos();
@@ -483,6 +528,10 @@
 
     function salvarEndereco(e) {
       e.preventDefault();
+      if (!estado.ehAdmin) {
+        exibirToast('Apenas administradores podem cadastrar.');
+        return;
+      }
       const tipo = document.getElementById('end-tipo').value;
       let obj = { id: Date.now(), tipo };
       if (tipo === 'simples') {
