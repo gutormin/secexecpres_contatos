@@ -1257,14 +1257,14 @@
       <div class="consulta-search-row">
         <div class="search-box" style="flex:1">
           <i class="fas fa-search"></i>
-          <input type="text" id="input-busca-end" placeholder="Buscar por autoridade, cargo, órgão ou texto..." oninput="renderizarEnderecos()"/>
+          <input type="text" id="input-busca-end" placeholder="Buscar por autoridade, cargo, órgão ou texto..." oninput="filtrarEnderecos(filtroTipoEndereco)"/>
         </div>
       </div>
       <div class="consulta-filters">
         <div class="tipo-tabs">
-          <button class="tipo-tab ativo-todos" id="tab-end-todos" onclick="filtrarTipoEnd('todos')">Todos</button>
-          <button class="tipo-tab" id="tab-end-simples" onclick="filtrarTipoEnd('simples')"><i class="fas fa-user"></i> Ofício Simples</button>
-          <button class="tipo-tab" id="tab-end-circular" onclick="filtrarTipoEnd('circular')"><i class="fas fa-users"></i> Ofício Circular</button>
+          <button class="tipo-tab ativo-todos btn-filt-tipo" id="tab-end-todos" onclick="filtrarEnderecos('todos')">Todos</button>
+          <button class="tipo-tab btn-filt-tipo" id="tab-end-simples" onclick="filtrarEnderecos('simples')"><i class="fas fa-user"></i> Ofício Simples</button>
+          <button class="tipo-tab btn-filt-tipo" id="tab-end-circular" onclick="filtrarEnderecos('circular')"><i class="fas fa-users"></i> Ofício Circular</button>
         </div>
       </div>
     </div>
@@ -1579,6 +1579,7 @@ function atualizarInterfacePermissoes() {
   const canCreate = checkPermission("create");
   document.getElementById("btn-nav-cad-com").classList.toggle("hidden", !canCreate);
   document.getElementById("btn-nav-cad-ext").classList.toggle("hidden", !canCreate);
+  document.getElementById("btn-novo-endereco")?.classList.toggle("hidden", !canCreate);
   
   // Guard button elements inside screens
   const btnNovoTel = document.querySelector(".btn-pri[onclick='abrirModalTelefone()']");
@@ -3083,14 +3084,14 @@ window.carregarEnderecos = async () => {
 window.filtrarEnderecos = (tipo) => {
   filtroTipoEndereco = tipo;
   document.querySelectorAll('#tela-enderecos .btn-filt-tipo').forEach(b => {
-    b.classList.toggle('ativo', b.getAttribute('onclick')?.includes(`'${tipo}'`));
+    b.classList.toggle('ativo-todos', b.getAttribute('onclick')?.includes(`'${tipo}'`));
   });
 
-  const busca = (document.getElementById("end-busca")?.value || "").toLowerCase().trim();
+  const busca = (document.getElementById("input-busca-end")?.value || "").toLowerCase().trim();
   
   enderecosFiltrados = todosEnderecos.filter(item => {
     const matchTipo = (tipo === 'todos' || item.tipo === tipo);
-    const texto = `${item.destinatario || ''} ${item.cargo || ''} ${item.orgao || ''} ${item.vocativo || ''}`.toLowerCase();
+    const texto = `${item.destinatario || ''} ${item.cargo || ''} ${item.orgao || ''} ${item.vocativo || ''} ${item.nome || ''}`.toLowerCase();
     const matchBusca = !busca || texto.includes(busca);
     return matchTipo && matchBusca;
   });
@@ -3099,13 +3100,13 @@ window.filtrarEnderecos = (tipo) => {
 };
 
 window.limparBuscaEnd = () => {
-  const el = document.getElementById("end-busca");
+  const el = document.getElementById("input-busca-end");
   if (el) el.value = "";
   filtrarEnderecos(filtroTipoEndereco);
 };
 
 function renderizarGridEnderecos() {
-  const container = document.getElementById("enderecos-container");
+  const container = document.getElementById("container-enderecos");
   if (!container) return;
 
   if (!enderecosFiltrados.length) {
