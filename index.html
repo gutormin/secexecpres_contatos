@@ -1297,17 +1297,17 @@
         </div>
 
         <div id="campos-simples">
-          <div class="fgroup" style="margin-bottom:20px;"><label>Vocativo / Tratamento <span class="req">*</span></label><input type="text" id="end-vocativo" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreview()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
-          <div class="fgroup" style="margin-bottom:20px;"><label>Nome da Autoridade <span class="req">*</span></label><input type="text" id="end-nome" placeholder="Ex: Desembargador FABIANO ABEL DE ARAGÃO FERNANDES" oninput="atualizarPreview()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
-          <div class="fgroup" style="margin-bottom:20px;"><label>Cargo / Função <span class="req">*</span></label><input type="text" id="end-cargo" placeholder="Ex: 1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
-          <div class="fgroup" style="margin-bottom:20px;"><label>Órgão / Instituição <span style="color:var(--g400);font-weight:500;">(Opcional)</span></label><input type="text" id="end-orgao" placeholder="Ex: Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreview()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
-          <div class="fgroup" style="margin-bottom:20px;"><label>Expressão Final / Local <span class="req">*</span></label><input type="text" id="end-local" placeholder="Ex: N E S T A" oninput="atualizarPreview()" required style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Vocativo / Tratamento <span class="req">*</span></label><input type="text" id="end-vocativo" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Nome da Autoridade <span class="req">*</span></label><input type="text" id="end-nome" placeholder="Ex: Desembargador FABIANO ABEL DE ARAGÃO FERNANDES" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Cargo / Função <span class="req">*</span></label><input type="text" id="end-cargo" placeholder="Ex: 1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Órgão / Instituição <span style="color:var(--g400);font-weight:500;">(Opcional)</span></label><input type="text" id="end-orgao" placeholder="Ex: Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Expressão Final / Local <span class="req">*</span></label><input type="text" id="end-local" placeholder="Ex: N E S T A" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
         </div>
 
         <div id="campos-circular" class="hidden">
           <div class="fgroup" style="margin-bottom:20px;">
             <label>Texto Completo do Endereçamento Coletivo <span class="req">*</span></label>
-            <textarea id="end-texto-circular" rows="4" placeholder="Ex: Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás" oninput="atualizarPreview()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></textarea>
+            <textarea id="end-texto-circular" rows="4" placeholder="Ex: Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></textarea>
           </div>
         </div>
 
@@ -3240,18 +3240,20 @@ window.abrirFormEndereco = (id = null) => {
   if (id) {
     const item = todosEnderecos.find(x => x.id === id);
     if (item) {
-      document.getElementById("end-form-titulo").textContent = "Editar Endereçamento";
+      document.getElementById("form-end-titulo").textContent = "Editar Endereçamento";
       document.getElementById("end-tipo").value = item.tipo || "simples";
-      document.getElementById("end-vocativo").value = item.vocativo || "";
-      document.getElementById("end-destinatario").value = item.destinatario || "";
-      document.getElementById("end-cargo").value = item.cargo || "";
-      document.getElementById("end-orgao").value = item.orgao || "";
-      document.getElementById("end-endereco").value = item.endereco || "";
-      document.getElementById("end-cep-cidade").value = item.cepCidade || "";
-      document.getElementById("end-local-data").value = item.localData || "";
+      if (item.tipo === "simples") {
+        document.getElementById("end-vocativo").value = item.vocativo || "";
+        document.getElementById("end-nome").value = item.nome || item.destinatario || "";
+        document.getElementById("end-cargo").value = item.cargo || "";
+        document.getElementById("end-orgao").value = item.orgao || "";
+        document.getElementById("end-local").value = item.local || item.localData || "";
+      } else {
+        document.getElementById("end-texto-circular").value = item.textoCircular || item.destinatario || "";
+      }
     }
   } else {
-    document.getElementById("end-form-titulo").textContent = "Novo Endereçamento";
+    document.getElementById("form-end-titulo").textContent = "Novo Endereçamento";
   }
 
   alternarCamposTipoForm();
@@ -3262,40 +3264,37 @@ window.alternarCamposTipoForm = () => {
   const tipo = document.getElementById("end-tipo").value;
   const isSimples = tipo === "simples";
 
-  document.querySelectorAll(".campo-simples").forEach(el => el.style.display = isSimples ? "block" : "none");
-  document.querySelectorAll(".campo-circular").forEach(el => el.style.display = isSimples ? "none" : "block");
+  const elSimples = document.getElementById("campos-simples");
+  const elCircular = document.getElementById("campos-circular");
+  if (elSimples) elSimples.classList.toggle("hidden", !isSimples);
+  if (elCircular) elCircular.classList.toggle("hidden", isSimples);
 
   atualizarPreviewEndereco();
 };
 
 window.atualizarPreviewEndereco = () => {
   const tipo = document.getElementById("end-tipo").value;
-  const vocativo = document.getElementById("end-vocativo").value.trim();
-  const destinatario = document.getElementById("end-destinatario").value.trim();
-  const cargo = document.getElementById("end-cargo").value.trim();
-  const orgao = document.getElementById("end-orgao").value.trim();
-  const endereco = document.getElementById("end-endereco").value.trim();
-  const cepCidade = document.getElementById("end-cep-cidade").value.trim();
-  const localData = document.getElementById("end-local-data").value.trim();
-
-  const box = document.getElementById("preview-box-endereco");
+  const box = document.getElementById("end-preview");
   if (!box) return;
 
   if (tipo === "simples") {
-    box.innerHTML = `
-      <div>${vocativo ? vocativo + "<br>" : ""}</div>
-      <div style="font-weight:700">${destinatario || "Nome do Destinatário"}</div>
-      <div>${cargo || "Cargo"}</div>
-      <div>${orgao || "Órgão / Entidade"}</div>
-      <div>${endereco || "Endereço"}</div>
-      <div>${cepCidade || "CEP - Cidade/UF"}</div>
-    `;
+    const voc = document.getElementById("end-vocativo")?.value || "";
+    const nome = document.getElementById("end-nome")?.value || "";
+    const cargo = document.getElementById("end-cargo")?.value || "";
+    const orgao = document.getElementById("end-orgao")?.value || "";
+    const local = document.getElementById("end-local")?.value || "";
+
+    let linhas = [];
+    if (voc) linhas.push(voc);
+    if (nome) linhas.push(nome);
+    if (cargo) linhas.push(cargo);
+    if (orgao && orgao.trim() !== '') linhas.push(orgao);
+    if (local) linhas.push(local);
+
+    box.innerText = linhas.length ? linhas.join('\n') : 'Preencha os campos acima para visualizar o cabeçalho...';
   } else {
-    box.innerHTML = `
-      <div><strong>Vocativo:</strong> ${vocativo || "Ex: A Sua Excelência o Senhor"}</div>
-      <div><strong>Endereçamento:</strong> ${destinatario || "Ex: Senhores Membros / Excelentíssimos Desembargadores"}</div>
-      ${localData ? `<div><strong>Local/Data:</strong> ${localData}</div>` : ""}
-    `;
+    const txt = document.getElementById("end-texto-circular")?.value || "";
+    box.innerText = txt || 'Preencha o texto circular para visualizar...';
   }
 };
 
@@ -3307,33 +3306,40 @@ window.salvarEndereco = async (e) => {
   }
 
   const tipo = document.getElementById("end-tipo").value;
-  const destinatario = document.getElementById("end-destinatario").value.trim();
-  if (!destinatario) {
-    toast("aviso", "Preencha o campo Destinatário / Endereçamento.");
-    return;
-  }
+  let dados = { tipo, atualizadoEm: serverTimestamp() };
 
-  const dados = {
-    tipo,
-    vocativo: document.getElementById("end-vocativo").value.trim(),
-    destinatario,
-    cargo: document.getElementById("end-cargo").value.trim(),
-    orgao: document.getElementById("end-orgao").value.trim(),
-    endereco: document.getElementById("end-endereco").value.trim(),
-    cepCidade: document.getElementById("end-cep-cidade").value.trim(),
-    localData: document.getElementById("end-local-data").value.trim(),
-    atualizadoEm: serverTimestamp()
-  };
+  if (tipo === "simples") {
+    const nome = document.getElementById("end-nome").value.trim();
+    if (!nome) {
+      toast("aviso", "Preencha o nome da autoridade.");
+      return;
+    }
+    dados.vocativo = document.getElementById("end-vocativo").value.trim();
+    dados.nome = nome;
+    dados.destinatario = nome;
+    dados.cargo = document.getElementById("end-cargo").value.trim();
+    dados.orgao = document.getElementById("end-orgao").value.trim();
+    dados.local = document.getElementById("end-local").value.trim();
+    dados.localData = dados.local;
+  } else {
+    const txt = document.getElementById("end-texto-circular").value.trim();
+    if (!txt) {
+      toast("aviso", "Preencha o texto do endereçamento circular.");
+      return;
+    }
+    dados.textoCircular = txt;
+    dados.destinatario = txt;
+  }
 
   mostrarLoading(true);
   try {
     if (enderecoEditandoId) {
       await updateDoc(doc(db, "enderecos", enderecoEditandoId), dados);
-      await logAction("Edição Endereçamento", `Editou endereçamento: ${destinatario}`);
+      await logAction("Edição Endereçamento", `Editou endereçamento: ${dados.nome || dados.textoCircular}`);
       toast("ok", "Endereçamento atualizado com sucesso!");
     } else {
       await addDoc(collection(db, "enderecos"), dados);
-      await logAction("Criação Endereçamento", `Criou endereçamento: ${destinatario}`);
+      await logAction("Criação Endereçamento", `Criou endereçamento: ${dados.nome || dados.textoCircular}`);
       toast("ok", "Endereçamento cadastrado com sucesso!");
     }
     irPara("enderecos");
@@ -3355,7 +3361,7 @@ window.excluirEndereco = (id) => {
     return;
   }
   const item = todosEnderecos.find(x => x.id === id);
-  const nome = item ? item.destinatario : "este item";
+  const nome = item ? (item.nome || item.destinatario || item.textoCircular) : "este item";
 
   document.getElementById("confirmar-msg").textContent = `Deseja excluir o endereçamento de "${nome}"?`;
   document.getElementById("btn-confirmar").onclick = async () => {
@@ -3382,9 +3388,15 @@ window.copiarEnderecoCard = (id, btnEl) => {
 
   let texto = "";
   if (item.tipo === "simples") {
-    texto = [item.vocativo, item.destinatario, item.cargo, item.orgao, item.endereco, item.cepCidade].filter(Boolean).join("\n");
+    let linhas = [];
+    if (item.vocativo) linhas.push(item.vocativo);
+    if (item.nome || item.destinatario) linhas.push(item.nome || item.destinatario);
+    if (item.cargo) linhas.push(item.cargo);
+    if (item.orgao && item.orgao.trim() !== '') linhas.push(item.orgao);
+    if (item.local || item.localData) linhas.push(item.local || item.localData);
+    texto = linhas.join('\n');
   } else {
-    texto = [item.vocativo, item.destinatario, item.localData].filter(Boolean).join("\n");
+    texto = item.textoCircular || item.destinatario || '';
   }
 
   copiarTexto(texto, btnEl);
