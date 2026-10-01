@@ -3268,7 +3268,7 @@ function renderizarGridEnderecos() {
     const vocativoTxt = item.vocativo ? item.vocativo.trim() : '';
 
     if (isSimples) {
-      const tratamento = item.tratamento || '';
+      const tratamento = item.tratamento || 'A Sua Excelência o Senhor';
       const nome = item.nome || item.destinatario || '';
       const cargo = item.cargo || '';
       const orgao = (item.orgao && item.orgao.trim() !== '') ? item.orgao : '';
@@ -3285,17 +3285,17 @@ function renderizarGridEnderecos() {
       corpoTexto = `
         ${vocativoTxt ? `
           <div style="background:var(--primary-l);border:1px solid var(--primary-m);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
-            <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
               <span><i class="fas fa-comment-dots"></i> Vocativo</span>
-              <button class="tc-btn" style="background:#fff;color:var(--primary);padding:3px 8px;font-size:11px;border:1px solid var(--primary-m);" onclick="copiarTexto('${vocativoTxt.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)"><i class="fas fa-copy"></i> Copiar Vocativo</button>
+              <button class="tc-btn" style="background:#fff;color:var(--primary);padding:3px 8px;font-size:11px;border:1px solid var(--primary-m);white-space:nowrap;" onclick="copiarTexto('${vocativoTxt.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)"><i class="fas fa-copy"></i> Copiar Vocativo</button>
             </div>
             <div style="font-size:13px;font-weight:600;color:var(--g900);white-space:pre-line">${vocativoTxt}</div>
           </div>
         ` : ''}
         <div style="background:#F8FAFC;border:1px solid var(--g200);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <div style="font-size:11px;font-weight:700;color:var(--g600);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--g600);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
             <span><i class="fas fa-heading"></i> Endereçamento</span>
-            <button class="tc-btn" style="background:#fff;color:var(--g700);padding:3px 8px;font-size:11px;border:1px solid var(--g300);" onclick="copiarEnderecoCard('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Endereçamento</button>
+            <button class="tc-btn" style="background:#fff;color:var(--g700);padding:3px 8px;font-size:11px;border:1px solid var(--g300);white-space:nowrap;" onclick="copiarEnderecoCard('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Endereçamento</button>
           </div>
           <div style="font-size:13px;line-height:1.5;color:var(--g700);white-space:pre-line">
             ${linhasEnderecamento || '<span style="color:var(--g400)">Nenhum texto de endereçamento informado</span>'}
@@ -3308,17 +3308,17 @@ function renderizarGridEnderecos() {
       corpoTexto = `
         ${vocativoTxt ? `
           <div style="background:var(--green-l);border:1px solid #A7F3D0;border-radius:8px;padding:10px 12px;margin-bottom:12px;">
-            <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
               <span><i class="fas fa-comment-dots"></i> Vocativo</span>
-              <button class="tc-btn" style="background:#fff;color:var(--green);padding:3px 8px;font-size:11px;border:1px solid #A7F3D0;" onclick="copiarTexto('${vocativoTxt.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)"><i class="fas fa-copy"></i> Copiar Vocativo</button>
+              <button class="tc-btn" style="background:#fff;color:var(--green);padding:3px 8px;font-size:11px;border:1px solid #A7F3D0;white-space:nowrap;" onclick="copiarTexto('${vocativoTxt.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)"><i class="fas fa-copy"></i> Copiar Vocativo</button>
             </div>
             <div style="font-size:13px;font-weight:600;color:var(--g900);white-space:pre-line">${vocativoTxt}</div>
           </div>
         ` : ''}
         <div style="background:#F8FAFC;border:1px solid var(--g200);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <div style="font-size:11px;font-weight:700;color:var(--g600);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--g600);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
             <span><i class="fas fa-heading"></i> Endereçamento Circular</span>
-            <button class="tc-btn" style="background:#fff;color:var(--g700);padding:3px 8px;font-size:11px;border:1px solid var(--g300);" onclick="copiarEnderecoCard('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Endereçamento</button>
+            <button class="tc-btn" style="background:#fff;color:var(--g700);padding:3px 8px;font-size:11px;border:1px solid var(--g300);white-space:nowrap;" onclick="copiarEnderecoCard('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Endereçamento</button>
           </div>
           <div style="font-size:13px;line-height:1.5;color:var(--g700);white-space:pre-line">
             ${txtCircular || '<span style="color:var(--g400)">Nenhum texto circular informado</span>'}
