@@ -3110,7 +3110,8 @@ window.carregarEnderecos = async () => {
     const itensPadrao = [
       {
         tipo: 'simples',
-        vocativo: 'A Sua Excelência a Senhora',
+        tratamento: 'A Sua Excelência a Senhora',
+        vocativo: 'Senhora Desembargadora 2ª Vice-Presidente,',
         nome: 'Desembargadora ROZANA FERNANDES CAMAPUM',
         destinatario: 'Desembargadora ROZANA FERNANDES CAMAPUM',
         cargo: '2ª Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
@@ -3120,7 +3121,8 @@ window.carregarEnderecos = async () => {
       },
       {
         tipo: 'simples',
-        vocativo: 'A Sua Excelência o Senhor',
+        tratamento: 'A Sua Excelência o Senhor',
+        vocativo: 'Senhor Desembargador 1º Vice-Presidente,',
         nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
         destinatario: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
         cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
@@ -3169,6 +3171,19 @@ window.carregarEnderecos = async () => {
         todosEnderecos.push({ id: refDoc.id, ...itemMagistrados });
       }
     }
+
+    // Normaliza os itens carregados para corrigir dados legados onde tratamento estava salvo no campo vocativo
+    todosEnderecos.forEach(item => {
+      if (item.tipo === 'simples') {
+        const voc = (item.vocativo || '').trim();
+        if (voc.startsWith('A Sua Excelência') || voc.startsWith('Ao Senhor') || voc.startsWith('À Senhora') || voc.startsWith('Ao Excelentíssimo')) {
+          if (!item.tratamento) {
+            item.tratamento = voc;
+          }
+          item.vocativo = ''; // Limpa vocativo para não repetir o tratamento
+        }
+      }
+    });
 
     filtrarEnderecos(filtroTipoEndereco);
   } catch(e) {
