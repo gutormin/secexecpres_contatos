@@ -3288,10 +3288,17 @@ function renderizarGridEnderecos() {
         </div>
       `;
     } else {
+      const vocCirc = item.vocativo || '';
       const txtCircular = item.textoCircular || item.destinatario || '';
+      
+      const linhasHtml = [
+        vocCirc ? `<div>${vocCirc}</div>` : '',
+        txtCircular ? `<div>${txtCircular}</div>` : ''
+      ].filter(Boolean).join('');
+
       corpoTexto = `
-        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px">
-          ${txtCircular}
+        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px;white-space:pre-line">
+          ${linhasHtml}
         </div>
       `;
     }
