@@ -3268,7 +3268,7 @@ function renderizarGridEnderecos() {
     const vocativoTxt = item.vocativo ? item.vocativo.trim() : '';
 
     if (isSimples) {
-      const tratamento = item.tratamento || 'A Sua Excelência o Senhor';
+      const tratamento = item.tratamento || '';
       const nome = item.nome || item.destinatario || '';
       const cargo = item.cargo || '';
       const orgao = (item.orgao && item.orgao.trim() !== '') ? item.orgao : '';
