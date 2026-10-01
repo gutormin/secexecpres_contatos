@@ -3274,8 +3274,10 @@ function renderizarGridEnderecos() {
       const orgao = (item.orgao && item.orgao.trim() !== '') ? item.orgao : '';
       const local = item.local || item.localData || '';
 
+      const vocLabel = voc ? `<div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:2px"><i class="fas fa-comment-dots" style="font-size:10px;margin-right:4px"></i>${voc}</div>` : '';
+
       const linhasHtml = [
-        voc ? `<div>${voc}</div>` : '',
+        vocLabel,
         nome ? `<div style="font-weight:700;color:var(--g900)">${nome}</div>` : '',
         cargo ? `<div>${cargo}</div>` : '',
         orgao ? `<div>${orgao}</div>` : '',
@@ -3283,7 +3285,7 @@ function renderizarGridEnderecos() {
       ].filter(Boolean).join('');
 
       corpoTexto = `
-        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px;white-space:pre-line">
+        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px">
           ${linhasHtml}
         </div>
       `;
@@ -3291,13 +3293,15 @@ function renderizarGridEnderecos() {
       const vocCirc = item.vocativo || '';
       const txtCircular = item.textoCircular || item.destinatario || '';
       
+      const vocLabel = vocCirc ? `<div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:2px"><i class="fas fa-comment-dots" style="font-size:10px;margin-right:4px"></i>${vocCirc}</div>` : '';
+
       const linhasHtml = [
-        vocCirc ? `<div>${vocCirc}</div>` : '',
+        vocLabel,
         txtCircular ? `<div>${txtCircular}</div>` : ''
       ].filter(Boolean).join('');
 
       corpoTexto = `
-        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px;white-space:pre-line">
+        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px">
           ${linhasHtml}
         </div>
       `;
