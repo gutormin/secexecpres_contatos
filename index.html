@@ -1311,6 +1311,10 @@
 
         <div id="campos-circular" class="hidden">
           <div class="fgroup" style="margin-bottom:20px;">
+            <label>Vocativo / Tratamento <span style="color:var(--g400);font-weight:500;">(Opcional)</span></label>
+            <input type="text" id="end-vocativo-circular" placeholder="Ex: Senhoras Diretoras e Senhores Diretores," oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;">
+          </div>
+          <div class="fgroup" style="margin-bottom:20px;">
             <label>Texto Completo do Endereçamento Coletivo <span class="req">*</span></label>
             <textarea id="end-texto-circular" rows="4" placeholder="Ex: Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></textarea>
           </div>
@@ -3370,6 +3374,7 @@ window.abrirFormEndereco = (id = null) => {
         document.getElementById("end-orgao").value = item.orgao || "";
         document.getElementById("end-local").value = item.local || item.localData || "";
       } else {
+        document.getElementById("end-vocativo-circular").value = item.vocativo || "";
         document.getElementById("end-texto-circular").value = item.textoCircular || item.destinatario || "";
       }
     }
@@ -3414,8 +3419,12 @@ window.atualizarPreviewEndereco = () => {
 
     box.innerText = linhas.length ? linhas.join('\n') : 'Preencha os campos acima para visualizar o cabeçalho...';
   } else {
-    const txt = document.getElementById("end-texto-circular")?.value || "";
-    box.innerText = txt || 'Preencha o texto circular para visualizar...';
+    const vocCirc = document.getElementById("end-vocativo-circular")?.value || "";
+    const txtCirc = document.getElementById("end-texto-circular")?.value || "";
+    let linhas = [];
+    if (vocCirc) linhas.push(vocCirc);
+    if (txtCirc) linhas.push(txtCirc);
+    box.innerText = linhas.length ? linhas.join('\n') : 'Preencha o texto circular para visualizar...';
   }
 };
 
@@ -3448,6 +3457,7 @@ window.salvarEndereco = async (e) => {
       toast("aviso", "Preencha o texto do endereçamento circular.");
       return;
     }
+    dados.vocativo = document.getElementById("end-vocativo-circular").value.trim();
     dados.textoCircular = txt;
     dados.destinatario = txt;
   }
@@ -3517,7 +3527,10 @@ window.copiarEnderecoCard = (id, btnEl) => {
     if (item.local || item.localData) linhas.push(item.local || item.localData);
     texto = linhas.join('\n');
   } else {
-    texto = item.textoCircular || item.destinatario || '';
+    let linhas = [];
+    if (item.vocativo) linhas.push(item.vocativo);
+    if (item.textoCircular || item.destinatario) linhas.push(item.textoCircular || item.destinatario);
+    texto = linhas.join('\n');
   }
 
   copiarTexto(texto, btnEl);
