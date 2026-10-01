@@ -1302,22 +1302,20 @@
         </div>
 
         <div id="campos-simples">
-          <div class="fgroup" style="margin-bottom:20px;"><label>Vocativo / Tratamento <span class="req">*</span></label><input type="text" id="end-vocativo" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
-          <div class="fgroup" style="margin-bottom:20px;"><label>Nome da Autoridade <span class="req">*</span></label><input type="text" id="end-nome" placeholder="Ex: Desembargador FABIANO ABEL DE ARAGÃO FERNANDES" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
-          <div class="fgroup" style="margin-bottom:20px;"><label>Cargo / Função <span class="req">*</span></label><input type="text" id="end-cargo" placeholder="Ex: 1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Tratamento do Endereçamento <span class="req">*</span></label><input type="text" id="end-tratamento" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Nome da Autoridade <span class="req">*</span></label><input type="text" id="end-nome" placeholder="Ex: Desembargador JERONYMO PEDRO VILLAS BOAS" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Cargo / Função <span class="req">*</span></label><input type="text" id="end-cargo" placeholder="Ex: Diretor da Escola Judicial de Goiás – EJUG" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
           <div class="fgroup" style="margin-bottom:20px;"><label>Órgão / Instituição <span style="color:var(--g400);font-weight:500;">(Opcional)</span></label><input type="text" id="end-orgao" placeholder="Ex: Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
           <div class="fgroup" style="margin-bottom:20px;"><label>Expressão Final / Local <span class="req">*</span></label><input type="text" id="end-local" placeholder="Ex: N E S T A" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;background:var(--primary-l);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--primary-m);"><label style="color:var(--primary)"><i class="fas fa-comment-dots"></i> Vocativo do Texto (Saudação de Abertura)</label><input type="text" id="end-vocativo" placeholder="Ex: Senhor Desembargador Diretor," oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
         </div>
 
         <div id="campos-circular" class="hidden">
           <div class="fgroup" style="margin-bottom:20px;">
-            <label>Vocativo / Tratamento <span style="color:var(--g400);font-weight:500;">(Opcional)</span></label>
-            <input type="text" id="end-vocativo-circular" placeholder="Ex: Senhoras Diretoras e Senhores Diretores," oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;">
-          </div>
-          <div class="fgroup" style="margin-bottom:20px;">
             <label>Texto Completo do Endereçamento Coletivo <span class="req">*</span></label>
             <textarea id="end-texto-circular" rows="4" placeholder="Ex: Às Excelentíssimas Senhoras Diretoras do Foro e aos Excelentíssimos Senhores Diretores do Foro do Poder Judiciário do Estado de Goiás" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></textarea>
           </div>
+          <div class="fgroup" style="margin-bottom:20px;background:var(--green-l);padding:14px;border-radius:var(--radius-sm);border:1px solid #A7F3D0;"><label style="color:var(--green)"><i class="fas fa-comment-dots"></i> Vocativo do Texto (Saudação de Abertura)</label><input type="text" id="end-vocativo-circular" placeholder="Ex: Senhoras Diretoras e Senhores Diretores," oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
         </div>
 
         <div class="fgroup" style="margin-bottom:20px;">
@@ -3267,15 +3265,17 @@ function renderizarGridEnderecos() {
       : `<span class="badge badge-circular" style="background:rgba(16,185,129,0.1);color:var(--green);padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;">Ofício Circular</span>`;
 
     let corpoTexto = '';
+    const vocativoTxt = item.vocativo ? item.vocativo.trim() : '';
+
     if (isSimples) {
-      const voc = item.vocativo || '';
+      const tratamento = item.tratamento || '';
       const nome = item.nome || item.destinatario || '';
       const cargo = item.cargo || '';
       const orgao = (item.orgao && item.orgao.trim() !== '') ? item.orgao : '';
       const local = item.local || item.localData || '';
 
-      const linhasHtml = [
-        voc ? `<div>${voc}</div>` : '',
+      const linhasEnderecamento = [
+        tratamento ? `<div>${tratamento}</div>` : '',
         nome ? `<div style="font-weight:700;color:var(--g900)">${nome}</div>` : '',
         cargo ? `<div>${cargo}</div>` : '',
         orgao ? `<div>${orgao}</div>` : '',
@@ -3283,29 +3283,53 @@ function renderizarGridEnderecos() {
       ].filter(Boolean).join('');
 
       corpoTexto = `
-        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px;white-space:pre-line">
-          ${linhasHtml}
+        ${vocativoTxt ? `
+          <div style="background:var(--primary-l);border:1px solid var(--primary-m);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+              <span><i class="fas fa-comment-dots"></i> Vocativo</span>
+              <button class="tc-btn" style="background:#fff;color:var(--primary);padding:3px 8px;font-size:11px;border:1px solid var(--primary-m);" onclick="copiarTexto('${vocativoTxt.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)"><i class="fas fa-copy"></i> Copiar Vocativo</button>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--g900);white-space:pre-line">${vocativoTxt}</div>
+          </div>
+        ` : ''}
+        <div style="background:#F8FAFC;border:1px solid var(--g200);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--g600);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+            <span><i class="fas fa-heading"></i> Endereçamento</span>
+            <button class="tc-btn" style="background:#fff;color:var(--g700);padding:3px 8px;font-size:11px;border:1px solid var(--g300);" onclick="copiarEnderecoCard('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Endereçamento</button>
+          </div>
+          <div style="font-size:13px;line-height:1.5;color:var(--g700);white-space:pre-line">
+            ${linhasEnderecamento || '<span style="color:var(--g400)">Nenhum texto de endereçamento informado</span>'}
+          </div>
         </div>
       `;
     } else {
-      const vocCirc = item.vocativo || '';
       const txtCircular = item.textoCircular || item.destinatario || '';
       
-      const linhasHtml = [
-        vocCirc ? `<div>${vocCirc}</div>` : '',
-        txtCircular ? `<div>${txtCircular}</div>` : ''
-      ].filter(Boolean).join('');
-
       corpoTexto = `
-        <div style="font-size:13px;line-height:1.5;color:var(--g700);margin-bottom:12px;white-space:pre-line">
-          ${linhasHtml}
+        ${vocativoTxt ? `
+          <div style="background:var(--green-l);border:1px solid #A7F3D0;border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+              <span><i class="fas fa-comment-dots"></i> Vocativo</span>
+              <button class="tc-btn" style="background:#fff;color:var(--green);padding:3px 8px;font-size:11px;border:1px solid #A7F3D0;" onclick="copiarTexto('${vocativoTxt.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)"><i class="fas fa-copy"></i> Copiar Vocativo</button>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--g900);white-space:pre-line">${vocativoTxt}</div>
+          </div>
+        ` : ''}
+        <div style="background:#F8FAFC;border:1px solid var(--g200);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--g600);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+            <span><i class="fas fa-heading"></i> Endereçamento Circular</span>
+            <button class="tc-btn" style="background:#fff;color:var(--g700);padding:3px 8px;font-size:11px;border:1px solid var(--g300);" onclick="copiarEnderecoCard('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Endereçamento</button>
+          </div>
+          <div style="font-size:13px;line-height:1.5;color:var(--g700);white-space:pre-line">
+            ${txtCircular || '<span style="color:var(--g400)">Nenhum texto circular informado</span>'}
+          </div>
         </div>
       `;
     }
 
     const btnEditar = canEdit ? `<button class="tc-btn edit" onclick="editarEndereco('${item.id}')"><i class="fas fa-pen"></i> Editar</button>` : '';
     const btnExcluir = canDelete ? `<button class="tc-btn del" onclick="excluirEndereco('${item.id}')"><i class="fas fa-trash"></i> Excluir</button>` : '';
-    const btnCopiar = `<button class="tc-btn" style="background:var(--g100);color:var(--g700)" onclick="copiarEnderecoCard('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Texto</button>`;
+    const btnCopiarTudo = `<button class="tc-btn" style="background:var(--g100);color:var(--g700)" onclick="copiarEnderecoCompleto('${item.id}', this)"><i class="fas fa-copy"></i> Copiar Tudo</button>`;
 
     return `
       <div class="card-endereco" style="background:#fff;border:1px solid var(--g200);border-radius:12px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
@@ -3316,7 +3340,7 @@ function renderizarGridEnderecos() {
           ${corpoTexto}
         </div>
         <div class="tc-foot" style="display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--g100)">
-          ${btnCopiar}
+          ${btnCopiarTudo}
           ${btnEditar}
           ${btnExcluir}
         </div>
@@ -3375,6 +3399,7 @@ window.abrirFormEndereco = (id = null) => {
       document.getElementById("form-end-titulo").textContent = "Editar Endereçamento";
       document.getElementById("end-tipo").value = item.tipo || "simples";
       if (item.tipo === "simples") {
+        document.getElementById("end-tratamento").value = item.tratamento || "";
         document.getElementById("end-vocativo").value = item.vocativo || "";
         document.getElementById("end-nome").value = item.nome || item.destinatario || "";
         document.getElementById("end-cargo").value = item.cargo || "";
@@ -3411,27 +3436,37 @@ window.atualizarPreviewEndereco = () => {
   if (!box) return;
 
   if (tipo === "simples") {
+    const trat = document.getElementById("end-tratamento")?.value || "";
     const voc = document.getElementById("end-vocativo")?.value || "";
     const nome = document.getElementById("end-nome")?.value || "";
     const cargo = document.getElementById("end-cargo")?.value || "";
     const orgao = document.getElementById("end-orgao")?.value || "";
     const local = document.getElementById("end-local")?.value || "";
 
+    let html = "";
+    if (voc) {
+      html += `<strong style="color:var(--primary)">[ VOCATIVO ]</strong>\n${voc}\n\n`;
+    }
+    html += `<strong style="color:var(--g600)">[ ENDEREÇAMENTO ]</strong>\n`;
     let linhas = [];
-    if (voc) linhas.push(voc);
+    if (trat) linhas.push(trat);
     if (nome) linhas.push(nome);
     if (cargo) linhas.push(cargo);
     if (orgao && orgao.trim() !== '') linhas.push(orgao);
     if (local) linhas.push(local);
 
-    box.innerText = linhas.length ? linhas.join('\n') : 'Preencha os campos acima para visualizar o cabeçalho...';
+    html += linhas.length ? linhas.join('\n') : '(Preencha os campos de endereçamento)';
+    box.innerHTML = html;
   } else {
     const vocCirc = document.getElementById("end-vocativo-circular")?.value || "";
     const txtCirc = document.getElementById("end-texto-circular")?.value || "";
-    let linhas = [];
-    if (vocCirc) linhas.push(vocCirc);
-    if (txtCirc) linhas.push(txtCirc);
-    box.innerText = linhas.length ? linhas.join('\n') : 'Preencha o texto circular para visualizar...';
+    let html = "";
+    if (vocCirc) {
+      html += `<strong style="color:var(--green)">[ VOCATIVO ]</strong>\n${vocCirc}\n\n`;
+    }
+    html += `<strong style="color:var(--g600)">[ ENDEREÇAMENTO CIRCULAR ]</strong>\n`;
+    html += txtCirc || '(Preencha o texto circular)';
+    box.innerHTML = html;
   }
 };
 
@@ -3451,6 +3486,7 @@ window.salvarEndereco = async (e) => {
       toast("aviso", "Preencha o nome da autoridade.");
       return;
     }
+    dados.tratamento = document.getElementById("end-tratamento").value.trim();
     dados.vocativo = document.getElementById("end-vocativo").value.trim();
     dados.nome = nome;
     dados.destinatario = nome;
@@ -3527,7 +3563,28 @@ window.copiarEnderecoCard = (id, btnEl) => {
   let texto = "";
   if (item.tipo === "simples") {
     let linhas = [];
+    if (item.tratamento) linhas.push(item.tratamento);
+    if (item.nome || item.destinatario) linhas.push(item.nome || item.destinatario);
+    if (item.cargo) linhas.push(item.cargo);
+    if (item.orgao && item.orgao.trim() !== '') linhas.push(item.orgao);
+    if (item.local || item.localData) linhas.push(item.local || item.localData);
+    texto = linhas.join('\n');
+  } else {
+    texto = item.textoCircular || item.destinatario || "";
+  }
+
+  copiarTexto(texto, btnEl);
+};
+
+window.copiarEnderecoCompleto = (id, btnEl) => {
+  const item = todosEnderecos.find(x => x.id === id);
+  if (!item) return;
+
+  let texto = "";
+  if (item.tipo === "simples") {
+    let linhas = [];
     if (item.vocativo) linhas.push(item.vocativo);
+    if (item.tratamento) linhas.push(item.tratamento);
     if (item.nome || item.destinatario) linhas.push(item.nome || item.destinatario);
     if (item.cargo) linhas.push(item.cargo);
     if (item.orgao && item.orgao.trim() !== '') linhas.push(item.orgao);
