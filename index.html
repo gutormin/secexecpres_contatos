@@ -1302,9 +1302,9 @@
         </div>
 
         <div id="campos-simples">
-          <div class="fgroup" style="margin-bottom:20px;"><label>Tratamento do Endereçamento <span class="req">*</span></label><input type="text" id="end-tratamento" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
-          <div class="fgroup" style="margin-bottom:20px;"><label>Nome da Autoridade <span class="req">*</span></label><input type="text" id="end-nome" placeholder="Ex: Desembargador JERONYMO PEDRO VILLAS BOAS" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
-          <div class="fgroup" style="margin-bottom:20px;"><label>Cargo / Função <span class="req">*</span></label><input type="text" id="end-cargo" placeholder="Ex: Diretor da Escola Judicial de Goiás – EJUG" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Tratamento do Endereçamento <span class="req">*</span></label><input type="text" id="end-tratamento" placeholder="Ex: A Sua Excelência o Senhor" oninput="atualizarPreviewEndereco(); sugerirVocativoAutomatico();" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Nome da Autoridade <span class="req">*</span></label><input type="text" id="end-nome" placeholder="Ex: Desembargador JERONYMO PEDRO VILLAS BOAS" oninput="atualizarPreviewEndereco(); sugerirVocativoAutomatico();" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
+          <div class="fgroup" style="margin-bottom:20px;"><label>Cargo / Função <span class="req">*</span></label><input type="text" id="end-cargo" placeholder="Ex: Diretor da Escola Judicial de Goiás – EJUG" oninput="atualizarPreviewEndereco(); sugerirVocativoAutomatico();" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
           <div class="fgroup" style="margin-bottom:20px;"><label>Órgão / Instituição <span style="color:var(--g400);font-weight:500;">(Opcional)</span></label><input type="text" id="end-orgao" placeholder="Ex: Tribunal de Justiça do Estado de Goiás" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
           <div class="fgroup" style="margin-bottom:20px;"><label>Expressão Final / Local <span class="req">*</span></label><input type="text" id="end-local" placeholder="Ex: N E S T A" oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
           <div class="fgroup" style="margin-bottom:20px;background:var(--primary-l);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--primary-m);"><label style="color:var(--primary)"><i class="fas fa-comment-dots"></i> Vocativo do Texto (Saudação de Abertura)</label><input type="text" id="end-vocativo" placeholder="Ex: Senhor Desembargador Diretor," oninput="atualizarPreviewEndereco()" style="width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:14px;"></div>
@@ -3403,6 +3403,8 @@ window.abrirFormEndereco = (id = null) => {
   enderecoEditandoId = id;
   const form = document.getElementById("form-endereco");
   if (form) form.reset();
+  const vocEl = document.getElementById("end-vocativo");
+  if (vocEl) delete vocEl.dataset.autoGerado;
 
   if (id) {
     const item = todosEnderecos.find(x => x.id === id);
@@ -3481,6 +3483,44 @@ window.atualizarPreviewEndereco = () => {
   }
 };
 
+window.sugerirVocativoAutomatico = (force = false) => {
+  const vocInput = document.getElementById("end-vocativo");
+  if (!vocInput) return;
+
+  // Se o usuário já digitou algo manualmente e não é force, não sobrescreve
+  if (!force && vocInput.value.trim() !== "" && !vocInput.dataset.autoGerado) {
+    return;
+  }
+
+  const cargo = (document.getElementById("end-cargo")?.value || "").trim();
+  const nome = (document.getElementById("end-nome")?.value || "").trim();
+  const trat = (document.getElementById("end-tratamento")?.value || "").trim();
+
+  if (!cargo) return;
+
+  // Detecta se é feminino pelo tratamento ou nome/cargo
+  const isFeminino = /a\s+sua\s+excel[eê]ncia\s+a\s+senhora|à\s+senhora|senhora|ju[íi]za|diretora/i.test(`${trat} ${nome} ${cargo}`);
+
+  const cargoNorm = cargo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  let sugerido = "";
+
+  // Regra 2: Juiz(a) de Direito e Diretor(a) do Foro
+  if (cargoNorm.includes("diretor") && (cargoNorm.includes("foro") || cargoNorm.includes("comarca"))) {
+    sugerido = isFeminino ? "Senhora Diretora do Foro," : "Senhor Diretor do Foro,";
+  } 
+  // Regra 1: Juiz(a) de Direito ou Juiz(a) de Direito Respondente
+  else if (cargoNorm.includes("juiz") || cargoNorm.includes("juiza")) {
+    sugerido = isFeminino ? "Senhora Juíza de Direito," : "Senhor Juiz de Direito,";
+  }
+
+  if (sugerido) {
+    vocInput.value = sugerido;
+    vocInput.dataset.autoGerado = "true";
+    atualizarPreviewEndereco();
+  }
+};
+
 window.salvarEndereco = async (e) => {
   if (e) e.preventDefault();
   if (!checkPermission("create")) {
@@ -3497,8 +3537,16 @@ window.salvarEndereco = async (e) => {
       toast("aviso", "Preencha o nome da autoridade.");
       return;
     }
+
+    // Se o vocativo estiver em branco ao salvar, tenta preencher automaticamente com base na regra
+    let voc = document.getElementById("end-vocativo").value.trim();
+    if (!voc) {
+      sugerirVocativoAutomatico(true);
+      voc = document.getElementById("end-vocativo").value.trim();
+    }
+
     dados.tratamento = document.getElementById("end-tratamento").value.trim();
-    dados.vocativo = document.getElementById("end-vocativo").value.trim();
+    dados.vocativo = voc;
     dados.nome = nome;
     dados.destinatario = nome;
     dados.cargo = document.getElementById("end-cargo").value.trim();
