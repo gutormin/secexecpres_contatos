@@ -3280,7 +3280,7 @@ function renderizarGridEnderecos() {
       : `<span class="badge badge-circular" style="background:rgba(16,185,129,0.1);color:var(--green);padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;">Ofício Circular</span>`;
 
     let corpoTexto = '';
-    const vocativoTxt = item.vocativo ? item.vocativo.trim() : '';
+    const vocativoTxt = (item.vocativo ? item.vocativo.trim() : '') || (isSimples ? obterVocativoSugerido(item) : '');
 
     if (isSimples) {
       const tratamento = item.tratamento || '';
@@ -3483,6 +3483,29 @@ window.atualizarPreviewEndereco = () => {
   }
 };
 
+window.obterVocativoSugerido = (item) => {
+  const cargo = (item.cargo || "").trim();
+  const nome = (item.nome || item.destinatario || "").trim();
+  const trat = (item.tratamento || "").trim();
+
+  if (!cargo) return "";
+
+  // Detecta se é feminino pelo tratamento ou nome/cargo
+  const isFeminino = /a\s+sua\s+excel[eê]ncia\s+a\s+senhora|à\s+senhora|senhora|ju[íi]za|diretora/i.test(`${trat} ${nome} ${cargo}`);
+  const cargoNorm = cargo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  // Regra 2: Juiz(a) de Direito e Diretor(a) do Foro (ou Diretor(a) de Foro)
+  if (cargoNorm.includes("diretor") && (cargoNorm.includes("foro") || cargoNorm.includes("comarca"))) {
+    return isFeminino ? "Senhora Diretora do Foro," : "Senhor Diretor do Foro,";
+  } 
+  // Regra 1: Juiz(a) de Direito ou Juiz(a) de Direito Respondente
+  else if (cargoNorm.includes("juiz") || cargoNorm.includes("juiza")) {
+    return isFeminino ? "Senhora Juíza de Direito," : "Senhor Juiz de Direito,";
+  }
+
+  return "";
+};
+
 window.sugerirVocativoAutomatico = (force = false) => {
   const vocInput = document.getElementById("end-vocativo");
   if (!vocInput) return;
@@ -3496,23 +3519,7 @@ window.sugerirVocativoAutomatico = (force = false) => {
   const nome = (document.getElementById("end-nome")?.value || "").trim();
   const trat = (document.getElementById("end-tratamento")?.value || "").trim();
 
-  if (!cargo) return;
-
-  // Detecta se é feminino pelo tratamento ou nome/cargo
-  const isFeminino = /a\s+sua\s+excel[eê]ncia\s+a\s+senhora|à\s+senhora|senhora|ju[íi]za|diretora/i.test(`${trat} ${nome} ${cargo}`);
-
-  const cargoNorm = cargo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-  let sugerido = "";
-
-  // Regra 2: Juiz(a) de Direito e Diretor(a) do Foro
-  if (cargoNorm.includes("diretor") && (cargoNorm.includes("foro") || cargoNorm.includes("comarca"))) {
-    sugerido = isFeminino ? "Senhora Diretora do Foro," : "Senhor Diretor do Foro,";
-  } 
-  // Regra 1: Juiz(a) de Direito ou Juiz(a) de Direito Respondente
-  else if (cargoNorm.includes("juiz") || cargoNorm.includes("juiza")) {
-    sugerido = isFeminino ? "Senhora Juíza de Direito," : "Senhor Juiz de Direito,";
-  }
+  const sugerido = obterVocativoSugerido({ cargo, nome, tratamento: trat });
 
   if (sugerido) {
     vocInput.value = sugerido;
@@ -3640,9 +3647,11 @@ window.copiarEnderecoCompleto = (id, btnEl) => {
   if (!item) return;
 
   let texto = "";
+  const voc = (item.vocativo ? item.vocativo.trim() : '') || obterVocativoSugerido(item);
+
   if (item.tipo === "simples") {
     let linhas = [];
-    if (item.vocativo) linhas.push(item.vocativo);
+    if (voc) linhas.push(voc);
     if (item.tratamento) linhas.push(item.tratamento);
     if (item.nome || item.destinatario) linhas.push(item.nome || item.destinatario);
     if (item.cargo) linhas.push(item.cargo);
@@ -3651,7 +3660,7 @@ window.copiarEnderecoCompleto = (id, btnEl) => {
     texto = linhas.join('\n');
   } else {
     let linhas = [];
-    if (item.vocativo) linhas.push(item.vocativo);
+    if (voc) linhas.push(voc);
     if (item.textoCircular || item.destinatario) linhas.push(item.textoCircular || item.destinatario);
     texto = linhas.join('\n');
   }
