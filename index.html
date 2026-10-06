@@ -899,7 +899,7 @@
       <button class="topbar-btn" id="btn-nav-telefones" onclick="irPara('telefones')">
         <i class="fas fa-phone-volume"></i><span>Tel. Úteis</span>
       </button>
-      <button class="topbar-btn" id="btn-nav-enderecos" onclick="irPara('enderecos')">
+      <button class="topbar-btn hidden" id="btn-nav-enderecos" onclick="irPara('enderecos')">
         <i class="fas fa-envelope-open-text"></i><span>Endereçamentos</span>
       </button>
       <button class="topbar-btn hidden" id="btn-nav-backup-audit" onclick="irPara('backup-audit')">
@@ -957,7 +957,7 @@
         <p>Lista rápida de servidores com telefone fixo, celular e e-mail de contato</p>
         <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
       </div>
-      <div class="inicio-card card-ext" onclick="irPara('enderecos')">
+      <div class="inicio-card card-ext hidden" id="card-inicio-enderecos" onclick="irPara('enderecos')">
         <div class="card-ico" style="background:rgba(245,158,11,.3); color:#FBBF24;"><i class="fas fa-envelope-open-text"></i></div>
         <h3>Endereçamentos</h3>
         <p>Cabeçalhos padronizados para Ofícios Simples e Circulares com cópia rápida</p>
@@ -1644,6 +1644,11 @@ window.checkPermission = (action) => {
 
 function atualizarInterfacePermissoes() {
   const canCreate = checkPermission("create");
+  // Endereçamentos: por enquanto, só administradores
+  const verEnderecos = checkPermission("admin");
+  document.getElementById("btn-nav-enderecos")?.classList.toggle("hidden", !verEnderecos);
+  document.getElementById("card-inicio-enderecos")?.classList.toggle("hidden", !verEnderecos);
+  if (!verEnderecos && ["tela-enderecos", "tela-cad-endereco"].some(id => document.getElementById(id)?.classList.contains("ativa"))) irPara("inicio");
   document.getElementById("btn-nav-cad-com").classList.toggle("hidden", !canCreate);
   document.getElementById("btn-nav-cad-ext").classList.toggle("hidden", !canCreate);
   document.getElementById("btn-novo-endereco")?.classList.toggle("hidden", !canCreate);
@@ -2063,6 +2068,10 @@ window.irPara = (tela) => {
   }
   if (tela === "cad-endereco" && !checkPermission("create")) {
     toast("aviso", "Você não tem permissão para cadastrar endereçamentos.");
+    return;
+  }
+  if ((tela === "enderecos" || tela === "cad-endereco") && !checkPermission("admin")) {
+    toast("aviso", "Endereçamentos: acesso restrito a administradores.");
     return;
   }
   if (tela === "backup-audit" && !checkPermission("admin")) {
