@@ -1570,7 +1570,7 @@
   <div class="modal-box" style="max-width: 820px; height: auto; max-height: 90vh;">
     <div class="ver-stripe" style="background: var(--amber);"></div>
     <div class="modal-head">
-      <h3><i class="fas fa-scale-balanced"></i> Alterações na lista de juízes do TJGO</h3>
+      <h3 id="modal-tjgo-titulo"><i class="fas fa-scale-balanced"></i> Alterações na lista de juízes do TJGO</h3>
       <button class="modal-close" onclick="fecharModal('modal-tjgo')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body" id="modal-tjgo-corpo" style="display:flex; flex-direction:column; gap:12px; overflow-y:auto;"></div>
@@ -3861,7 +3861,8 @@ const TJGO_DIRETORIA = "Diretoria do Foro";
 
 const tjgoEsc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 // Remove acentos sem mudar o tamanho do texto (para poder substituir o nome no lugar certo)
-const tjgoNorm = (v) => String(v || "").normalize("NFC").split("").map(ch => ch.normalize("NFD").replace(/[̀-ͯ]/g, "") || ch).join("").toUpperCase();
+const TJGO_SEM_ACENTO = { "Á":"A","À":"A","Â":"A","Ã":"A","Ä":"A","É":"E","È":"E","Ê":"E","Ë":"E","Í":"I","Ì":"I","Î":"I","Ï":"I","Ó":"O","Ò":"O","Ô":"O","Õ":"O","Ö":"O","Ú":"U","Ù":"U","Û":"U","Ü":"U","Ç":"C","Ñ":"N" };
+const tjgoNorm = (v) => String(v || "").normalize("NFC").toUpperCase().replace(/[ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑ]/g, c => TJGO_SEM_ACENTO[c]);
 const tjgoCurto = (comarca) => String(comarca || "").replace(/\s*(\(|\bDJ\b|\bLei\b).*$/i, "").trim() || comarca;
 const tjgoData = (ts) => {
   const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
@@ -3911,11 +3912,16 @@ function tjgoRenderAviso() {
   const diasSemRodar = ultima ? Math.floor((Date.now() - ultima.getTime()) / 86400000) : null;
   const atraso = diasSemRodar !== null && diasSemRodar >= 3
     ? ` <span style="color:var(--red);font-weight:700">· A sincronização não roda há ${diasSemRodar} dias (verifique o PC).</span>` : "";
+  // Só oferece o botão se houver endereçamentos sem vínculo que tenham correspondência na lista
+  const plano = tjgoLista && checkPermission("edit") ? tjgoPlanejar() : null;
+  const nVinc = plano ? plano.auto.length + plano.duvida.length : 0;
+  const btnVinc = nVinc
+    ? `<button class="btn-sec" style="padding:6px 12px;font-size:12px" onclick="abrirVinculoAutomatico()"><i class="fas fa-link"></i> Vincular automaticamente (${nVinc})</button>` : "";
   const rodape = `Última verificação: ${tjgoData(tjgoLista?.ultimaVarredura)} · site do TJGO atualizado em ${tjgoEsc(tjgoLista?.atualizacaoSite || "?")}${atraso}`;
 
   if (!tjgoPendentes.length) {
-    el.innerHTML = `<div style="font-size:12.5px;color:var(--g500);display:flex;align-items:center;gap:8px">
-      <i class="fas fa-scale-balanced"></i> Lista de juízes do TJGO sem alterações pendentes. ${rodape}</div>`;
+    el.innerHTML = `<div style="font-size:12.5px;color:var(--g500);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <i class="fas fa-scale-balanced"></i> <span>Lista de juízes do TJGO sem alterações pendentes. ${rodape}</span> ${btnVinc}</div>`;
     return;
   }
   const forte = comImpacto.length > 0;
@@ -3929,7 +3935,8 @@ function tjgoRenderAviso() {
         ${trocas.length ? ` · ${trocas.length} troca(s) de juiz` : ""}
         <div style="font-size:12px;color:var(--g500)">${rodape}</div>
       </div>
-      <button class="btn-pri" style="padding:8px 14px;font-size:13px" onclick="abrirModalTjgo()"><i class="fas fa-list-check"></i> Ver alterações</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${btnVinc}
+      <button class="btn-pri" style="padding:8px 14px;font-size:13px" onclick="abrirModalTjgo()"><i class="fas fa-list-check"></i> Ver alterações</button></div>
     </div>`;
 }
 
@@ -3954,6 +3961,7 @@ window.abrirModalTjgo = () => {
   const corpo = document.getElementById("modal-tjgo-corpo");
   const rodape = document.getElementById("modal-tjgo-rodape");
   if (!corpo) return;
+  document.getElementById("modal-tjgo-titulo").innerHTML = `<i class="fas fa-scale-balanced"></i> Alterações na lista de juízes do TJGO`;
   const podeEditar = checkPermission("edit");
   const lista = [...tjgoPendentes].sort((a, b) =>
     (tjgoAfetados(b).length > 0) - (tjgoAfetados(a).length > 0) || (b.trocaTitular === true) - (a.trocaTitular === true) ||
@@ -4143,5 +4151,133 @@ window.tjgoLocalizarPeloNome = () => {
   box.innerHTML = `<span style="font-size:12px;color:var(--g500)">Encontrado em ${achados.length} lugares — escolha:</span>` + achados.map((a, i) =>
     `<button type="button" class="btn-sec" style="justify-content:flex-start;text-align:left;padding:6px 10px;font-size:12px" onclick="tjgoPreencherVinculo(_tjgoAchados[${i}].comarca,_tjgoAchados[${i}].vara)">
       ${tjgoEsc(tjgoCurto(a.comarca))} · ${tjgoEsc(a.vara)}</button>`).join("");
+};
+
+/* ---------- vínculo automático em lote ---------- */
+let tjgoVincPlano = null; // { auto:[{end, alvo}], duvida:[{end, opcoes:[alvo]}], sem:[end] }
+
+// Parte do nome em MAIÚSCULAS ("Doutor FULANO DE TAL" -> "FULANO DE TAL")
+function tjgoNomeMaiusculo(txt) {
+  const toks = String(txt || "").split(/\s+/).filter(t => /\p{L}/u.test(t) && t === t.toLocaleUpperCase("pt-BR") && !/\d/.test(t));
+  return toks.join(" ");
+}
+const TJGO_CONECT = new Set(["DE", "DA", "DO", "DAS", "DOS", "E"]);
+const tjgoTokens = (s) => tjgoNorm(s).replace(/[^A-Z0-9 ]/g, " ").split(/\s+/).filter(t => t.length > 1 && !TJGO_CONECT.has(t));
+
+// Pontua o quanto o cargo do endereçamento combina com a vara/comarca (ex.: "2ª Vara Cível ... Comarca de Ceres")
+function tjgoPontuar(cargo, alvo) {
+  const c = new Set(tjgoTokens(cargo).map(t => t.replace(/^(\d+)[AO]$/, "$1")));
+  const ignorar = new Set(["VARA", "JUIZ", "JUIZA", "DIREITO", "COMARCA", "RES", "DJ", "LEI", "GOIAS", "ESTADO"]);
+  let p = 0;
+  tjgoTokens(alvo.vara).map(t => t.replace(/^(\d+)[AO]$/, "$1")).forEach(t => { if (!ignorar.has(t) && c.has(t)) p += /^\d+$/.test(t) ? 3 : 1; });
+  tjgoTokens(tjgoCurto(alvo.comarca)).forEach(t => { if (c.has(t)) p += 2; });
+  if (alvo.vara === TJGO_DIRETORIA) p += /DIRETOR/.test(tjgoNorm(cargo)) ? 6 : -6;
+  return p;
+}
+
+// Índice da lista (nomes já normalizados), refeito só quando a lista muda
+let tjgoIdxCache = { lista: null, itens: [] };
+function tjgoIndice() {
+  if (tjgoIdxCache.lista === tjgoLista) return tjgoIdxCache.itens;
+  const dir = {};
+  (tjgoLista?.linhas || []).forEach(l => { if (l.dirForo && !(l.comarca in dir)) dir[l.comarca] = l.pessoa; });
+  const itens = (tjgoLista?.linhas || []).filter(l => l.pessoa).map(l => {
+    const toks = tjgoTokens(l.pessoa);
+    const alvos = [{ comarca: l.comarca, vara: l.vara, pessoa: l.pessoa }];
+    if (l.dirForo && dir[l.comarca] === l.pessoa) alvos.push({ comarca: l.comarca, vara: TJGO_DIRETORIA, pessoa: l.pessoa });
+    return { p: tjgoNorm(l.pessoa), toks, set: new Set(toks), alvos };
+  });
+  tjgoIdxCache = { lista: tjgoLista, itens };
+  return itens;
+}
+
+function tjgoCandidatos(end) {
+  const nome = tjgoNorm(end.nome || end.destinatario);
+  const curto = tjgoTokens(tjgoNomeMaiusculo(end.nome || end.destinatario));
+  const exatos = [], parciais = [];
+  tjgoIndice().forEach(it => {
+    if (it.p.length >= 8 && nome.includes(it.p)) exatos.push(...it.alvos);
+    else if (curto.length >= 2 && it.toks[0] === curto[0] && curto.every(t => it.set.has(t))) parciais.push(...it.alvos);
+  });
+  const uniq = (arr) => arr.filter((a, i) => arr.findIndex(b => b.comarca === a.comarca && b.vara === a.vara) === i);
+  return { exatos: uniq(exatos), parciais: uniq(parciais) };
+}
+
+function tjgoPlanejar() {
+  const plano = { auto: [], duvida: [], sem: [] };
+  todosEnderecos.filter(e => e.tipo === "simples" && !e.tjgoComarca).forEach(end => {
+    const { exatos, parciais } = tjgoCandidatos(end);
+    const lista = exatos.length ? exatos : parciais;
+    if (!lista.length) { plano.sem.push(end); return; }
+    const ord = lista.map(a => ({ ...a, pts: tjgoPontuar(end.cargo, a) })).sort((a, b) => b.pts - a.pts);
+    const claro = ord.length === 1 || ord[0].pts > ord[1].pts;
+    if (exatos.length && claro) plano.auto.push({ end, alvo: ord[0] });
+    else plano.duvida.push({ end, opcoes: ord.slice(0, 6), parcial: !exatos.length });
+  });
+  return plano;
+}
+
+window.abrirVinculoAutomatico = () => {
+  if (!checkPermission("edit")) return toast("erro", "Sem permissão.");
+  if (!tjgoLista) return toast("aviso", "A lista do TJGO ainda não foi sincronizada.");
+  tjgoVincPlano = tjgoPlanejar();
+  const { auto, duvida, sem } = tjgoVincPlano;
+  const jaVinc = todosEnderecos.filter(e => e.tipo === "simples" && e.tjgoComarca).length;
+  const alvoTxt = (a) => `${tjgoEsc(tjgoCurto(a.comarca))} · ${tjgoEsc(a.vara)}`;
+  const linhaEnd = (e) => `<strong>${tjgoEsc(e.nome || e.destinatario)}</strong> <span style="color:var(--g500)">— ${tjgoEsc(e.cargo || "")}</span>`;
+
+  document.getElementById("modal-tjgo-titulo").innerHTML = `<i class="fas fa-link"></i> Vincular endereçamentos à lista do TJGO`;
+  document.getElementById("modal-tjgo-corpo").innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--g600)">
+      <span><strong style="color:var(--green)">${auto.length}</strong> com correspondência única</span>
+      <span><strong style="color:#92400E">${duvida.length}</strong> para você escolher</span>
+      <span><strong>${sem.length}</strong> sem correspondência (ex.: desembargadores, outros órgãos)</span>
+      ${jaVinc ? `<span>${jaVinc} já vinculados (não serão alterados)</span>` : ""}
+    </div>
+    ${duvida.length ? `<h4 style="margin:6px 0 0;font-size:14px">Escolha a vara certa (ou deixe “não vincular”)</h4>
+      ${duvida.map((d, i) => `
+        <div style="border:1px solid var(--amber);background:var(--amber-l);border-radius:10px;padding:10px 12px;font-size:13px">
+          <div style="margin-bottom:6px">${linhaEnd(d.end)}${d.parcial ? ` <span style="font-size:11px;color:#92400E">(nome parecido, confira)</span>` : ""}</div>
+          <select id="tjgo-vinc-${i}" style="width:100%;padding:8px 10px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:13px;background:#fff">
+            <option value="">— não vincular —</option>
+            ${d.opcoes.map((a, j) => `<option value="${j}">${alvoTxt(a)} (${tjgoEsc(a.pessoa)})</option>`).join("")}
+          </select>
+        </div>`).join("")}` : ""}
+    ${auto.length ? `<details ${duvida.length ? "" : "open"} style="font-size:13px"><summary style="cursor:pointer;font-weight:700;margin:6px 0">Ver os ${auto.length} vínculos automáticos</summary>
+      <div style="display:flex;flex-direction:column;gap:4px;max-height:320px;overflow-y:auto;border:1px solid var(--g200);border-radius:8px;padding:8px">
+        ${auto.map(a => `<div style="padding:4px 0;border-bottom:1px solid var(--g100)">${linhaEnd(a.end)}<br><span style="color:var(--green)">→ ${alvoTxt(a.alvo)}</span></div>`).join("")}
+      </div></details>` : ""}
+    ${sem.length ? `<details style="font-size:13px"><summary style="cursor:pointer;color:var(--g500)">Ver os ${sem.length} sem correspondência</summary>
+      <div style="max-height:220px;overflow-y:auto;color:var(--g600);padding:6px 0">${sem.map(e => `<div>${tjgoEsc(e.nome || e.destinatario)}</div>`).join("")}</div></details>` : ""}`;
+  document.getElementById("modal-tjgo-rodape").innerHTML = `
+    <button class="btn-sec" onclick="fecharModal('modal-tjgo')">Cancelar</button>
+    <button class="btn-pri" onclick="confirmarVinculoAutomatico()" ${auto.length + duvida.length ? "" : "disabled"}><i class="fas fa-link"></i> Vincular</button>`;
+  abrirModal("modal-tjgo");
+};
+
+window.confirmarVinculoAutomatico = async () => {
+  if (!tjgoVincPlano || !checkPermission("edit")) return;
+  const itens = tjgoVincPlano.auto.map(a => ({ id: a.end.id, alvo: a.alvo }));
+  tjgoVincPlano.duvida.forEach((d, i) => {
+    const v = document.getElementById(`tjgo-vinc-${i}`)?.value;
+    if (v !== "" && v != null) itens.push({ id: d.end.id, alvo: d.opcoes[+v] });
+  });
+  if (!itens.length) return toast("aviso", "Nada selecionado para vincular.");
+  mostrarLoading(true);
+  try {
+    for (let i = 0; i < itens.length; i += 400) {
+      const lote = writeBatch(db);
+      itens.slice(i, i + 400).forEach(x => lote.update(doc(db, "enderecos", x.id), {
+        tjgoComarca: x.alvo.comarca, tjgoVara: x.alvo.vara, atualizadoEm: serverTimestamp() }));
+      await lote.commit();
+    }
+    itens.forEach(x => { const e = todosEnderecos.find(y => y.id === x.id); if (e) { e.tjgoComarca = x.alvo.comarca; e.tjgoVara = x.alvo.vara; } });
+    await logAction("TJGO - vínculo automático", `${itens.length} endereçamento(s) vinculados à lista de juízes do TJGO`);
+    fecharModal("modal-tjgo");
+    tjgoRenderAviso(); renderizarGridEnderecos();
+    toast("ok", `${itens.length} endereçamento(s) vinculados.`);
+  } catch (e) {
+    console.error(e); toast("erro", "Erro ao gravar os vínculos.");
+  } finally { mostrarLoading(false); }
 };
 </script>
