@@ -3612,6 +3612,7 @@ window.salvarEndereco = async (e) => {
     dados.localData = dados.local;
     dados.tjgoComarca = document.getElementById("end-tjgo-comarca")?.value || "";
     dados.tjgoVara = dados.tjgoComarca ? (document.getElementById("end-tjgo-vara")?.value || "") : "";
+    if (dados.tjgoComarca) dados.tjgoSemVinculo = false;
   } else {
     const txt = document.getElementById("end-texto-circular").value.trim();
     if (!txt) {
@@ -4214,7 +4215,7 @@ function tjgoCandidatos(end) {
 
 function tjgoPlanejar() {
   const plano = { auto: [], duvida: [], sem: [] };
-  todosEnderecos.filter(e => e.tipo === "simples" && !e.tjgoComarca).forEach(end => {
+  todosEnderecos.filter(e => e.tipo === "simples" && !e.tjgoComarca && !e.tjgoSemVinculo).forEach(end => {
     const { exatos, parciais } = tjgoCandidatos(end);
     const lista = exatos.length ? exatos : parciais;
     if (!lista.length) { plano.sem.push(end); return; }
@@ -4248,7 +4249,8 @@ window.abrirVinculoAutomatico = () => {
         <div style="border:1px solid var(--amber);background:var(--amber-l);border-radius:10px;padding:10px 12px;font-size:13px">
           <div style="margin-bottom:6px">${linhaEnd(d.end)}${d.parcial ? ` <span style="font-size:11px;color:#92400E">(nome parecido, confira)</span>` : ""}</div>
           <select id="tjgo-vinc-${i}" style="width:100%;padding:8px 10px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:13px;background:#fff">
-            <option value="">— não vincular —</option>
+            <option value="">— não vincular (perguntar de novo depois) —</option>
+            <option value="nunca">— não vincular e não perguntar mais —</option>
             ${d.opcoes.map((a, j) => `<option value="${j}">${alvoTxt(a)} (${tjgoEsc(a.pessoa)})</option>`).join("")}
           </select>
         </div>`).join("")}` : ""}
@@ -4267,24 +4269,32 @@ window.abrirVinculoAutomatico = () => {
 window.confirmarVinculoAutomatico = async () => {
   if (!tjgoVincPlano || !checkPermission("edit")) return;
   const itens = tjgoVincPlano.auto.map(a => ({ id: a.end.id, alvo: a.alvo }));
+  const nunca = [];
   tjgoVincPlano.duvida.forEach((d, i) => {
     const v = document.getElementById(`tjgo-vinc-${i}`)?.value;
-    if (v !== "" && v != null) itens.push({ id: d.end.id, alvo: d.opcoes[+v] });
+    if (v === "nunca") nunca.push(d.end.id);
+    else if (v !== "" && v != null) itens.push({ id: d.end.id, alvo: d.opcoes[+v] });
   });
-  if (!itens.length) return toast("aviso", "Nada selecionado para vincular.");
+  if (!itens.length && !nunca.length) return toast("aviso", "Nada selecionado. Para fechar sem alterar, clique em Cancelar.");
   mostrarLoading(true);
   try {
     for (let i = 0; i < itens.length; i += 400) {
       const lote = writeBatch(db);
       itens.slice(i, i + 400).forEach(x => lote.update(doc(db, "enderecos", x.id), {
-        tjgoComarca: x.alvo.comarca, tjgoVara: x.alvo.vara, atualizadoEm: serverTimestamp() }));
+        tjgoComarca: x.alvo.comarca, tjgoVara: x.alvo.vara, tjgoSemVinculo: false, atualizadoEm: serverTimestamp() }));
       await lote.commit();
     }
+    if (nunca.length) {
+      const lote = writeBatch(db);
+      nunca.forEach(id => lote.update(doc(db, "enderecos", id), { tjgoSemVinculo: true }));
+      await lote.commit();
+      nunca.forEach(id => { const e = todosEnderecos.find(y => y.id === id); if (e) e.tjgoSemVinculo = true; });
+    }
     itens.forEach(x => { const e = todosEnderecos.find(y => y.id === x.id); if (e) { e.tjgoComarca = x.alvo.comarca; e.tjgoVara = x.alvo.vara; } });
-    await logAction("TJGO - vínculo automático", `${itens.length} endereçamento(s) vinculados à lista de juízes do TJGO`);
+    await logAction("TJGO - vínculo automático", `${itens.length} vinculado(s), ${nunca.length} marcado(s) para não perguntar mais`);
     fecharModal("modal-tjgo");
     tjgoRenderAviso(); renderizarGridEnderecos();
-    toast("ok", `${itens.length} endereçamento(s) vinculados.`);
+    toast("ok", [itens.length ? `${itens.length} vinculado(s)` : "", nunca.length ? `${nunca.length} não será(ão) mais perguntado(s)` : ""].filter(Boolean).join(" · ") + ".");
   } catch (e) {
     console.error(e); toast("erro", "Erro ao gravar os vínculos.");
   } finally { mostrarLoading(false); }
