@@ -3148,75 +3148,92 @@ const POR_PAGINA_ENDERECOS = 12;
 
 window.carregarEnderecos = async () => {
   mostrarLoading(true);
+  const itensPadrao = [
+    {
+      tipo: 'simples',
+      tratamento: 'A Sua Excelência a Senhora',
+      vocativo: 'Senhora Desembargadora 2ª Vice-Presidente,',
+      nome: 'Desembargadora ROZANA FERNANDES CAMAPUM',
+      destinatario: 'Desembargadora ROZANA FERNANDES CAMAPUM',
+      cargo: '2ª Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
+      orgao: '',
+      local: 'N E S T A',
+      localData: 'N E S T A'
+    },
+    {
+      tipo: 'simples',
+      tratamento: 'A Sua Excelência o Senhor',
+      vocativo: 'Senhor Desembargador 1º Vice-Presidente,',
+      nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
+      destinatario: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
+      cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
+      orgao: 'Tribunal de Justiça do Estado de Goiás',
+      local: 'N E S T A',
+      localData: 'N E S T A'
+    },
+    {
+      tipo: 'circular',
+      vocativo: '',
+      textoCircular: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás',
+      destinatario: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás'
+    }
+  ];
+
   try {
     const snap = await getDocs(collection(db, "enderecos"));
     
-    const itensPadrao = [
-      {
-        tipo: 'simples',
-        tratamento: 'A Sua Excelência a Senhora',
-        vocativo: 'Senhora Desembargadora 2ª Vice-Presidente,',
-        nome: 'Desembargadora ROZANA FERNANDES CAMAPUM',
-        destinatario: 'Desembargadora ROZANA FERNANDES CAMAPUM',
-        cargo: '2ª Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
-        orgao: '',
-        local: 'N E S T A',
-        localData: 'N E S T A'
-      },
-      {
-        tipo: 'simples',
-        tratamento: 'A Sua Excelência o Senhor',
-        vocativo: 'Senhor Desembargador 1º Vice-Presidente,',
-        nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
-        destinatario: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
-        cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
-        orgao: 'Tribunal de Justiça do Estado de Goiás',
-        local: 'N E S T A',
-        localData: 'N E S T A'
-      },
-      {
-        tipo: 'circular',
-        vocativo: '',
-        textoCircular: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás',
-        destinatario: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás'
-      }
-    ];
-
     if (snap.empty) {
+      todosEnderecos = itensPadrao.map((item, idx) => ({ id: "padrao_" + idx, ...item }));
       for (const item of itensPadrao) {
-        await addDoc(collection(db, "enderecos"), {
-          ...item,
-          criadoEm: serverTimestamp()
-        });
+        try {
+          await addDoc(collection(db, "enderecos"), {
+            ...item,
+            criadoEm: serverTimestamp()
+          });
+        } catch (errAdd) {
+          console.warn("Aviso ao criar item padrão no banco:", errAdd);
+        }
       }
-      const snapNovo = await getDocs(collection(db, "enderecos"));
-      todosEnderecos = snapNovo.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      try {
+        const snapNovo = await getDocs(collection(db, "enderecos"));
+        if (!snapNovo.empty) {
+          todosEnderecos = snapNovo.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+      } catch (errSnap) {
+        console.warn("Aviso ao recarregar snapNovo:", errSnap);
+      }
     } else {
       todosEnderecos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Garante que se faltar a Desembargadora Rozana ou Ofício Circular de Magistrados, adiciona automaticamente no banco
       const jaTemRozana = todosEnderecos.some(e => (e.destinatario || e.nome || '').toUpperCase().includes('ROZANA'));
       if (!jaTemRozana) {
         const itemRozana = itensPadrao[0];
-        const refDoc = await addDoc(collection(db, "enderecos"), {
-          ...itemRozana,
-          criadoEm: serverTimestamp()
-        });
-        todosEnderecos.push({ id: refDoc.id, ...itemRozana });
+        try {
+          const refDoc = await addDoc(collection(db, "enderecos"), {
+            ...itemRozana,
+            criadoEm: serverTimestamp()
+          });
+          todosEnderecos.push({ id: refDoc.id, ...itemRozana });
+        } catch (e) {
+          todosEnderecos.push({ id: "rozana_temp", ...itemRozana });
+        }
       }
 
       const jaTemMagistrados = todosEnderecos.some(e => (e.textoCircular || e.destinatario || '').toUpperCase().includes('MAGISTRADOS'));
       if (!jaTemMagistrados) {
         const itemMagistrados = itensPadrao[2];
-        const refDoc = await addDoc(collection(db, "enderecos"), {
-          ...itemMagistrados,
-          criadoEm: serverTimestamp()
-        });
-        todosEnderecos.push({ id: refDoc.id, ...itemMagistrados });
+        try {
+          const refDoc = await addDoc(collection(db, "enderecos"), {
+            ...itemMagistrados,
+            criadoEm: serverTimestamp()
+          });
+          todosEnderecos.push({ id: refDoc.id, ...itemMagistrados });
+        } catch (e) {
+          todosEnderecos.push({ id: "magistrados_temp", ...itemMagistrados });
+        }
       }
     }
 
-    // Normaliza os itens carregados para corrigir dados legados onde tratamento estava salvo no campo vocativo
     todosEnderecos.forEach(item => {
       if (item.tipo === 'simples') {
         const voc = (item.vocativo || '').trim();
@@ -3224,17 +3241,21 @@ window.carregarEnderecos = async () => {
           if (!item.tratamento) {
             item.tratamento = voc;
           }
-          item.vocativo = ''; // Limpa vocativo para não repetir o tratamento
+          item.vocativo = '';
         }
       }
     });
 
-    await carregarTjgo();
-    filtrarEnderecos(filtroTipoEndereco);
   } catch(e) {
-    console.error("Erro ao carregar endereçamentos:", e);
-    toast("erro", "Erro ao carregar endereçamentos do banco de dados.");
+    console.error("Erro ao carregar endereçamentos do Firestore:", e);
+    todosEnderecos = itensPadrao.map((item, idx) => ({ id: "padrao_" + idx, ...item }));
   } finally {
+    try {
+      await carregarTjgo();
+    } catch(errTjgo) {
+      console.warn("Erro no carregarTjgo:", errTjgo);
+    }
+    filtrarEnderecos(filtroTipoEndereco);
     mostrarLoading(false);
   }
 };
