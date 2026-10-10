@@ -1250,7 +1250,8 @@
           <p>Cabeçalhos oficiais para expedição de Ofícios Simples e Circulares</p>
         </div>
       </div>
-      <div style="display:flex;gap:10px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-sec hidden" id="btn-sincronizar-contatos-end" onclick="gerarEnderecosDeContatos()" title="Gerar endereçamentos automaticamente a partir de todos os contatos cadastrados"><i class="fas fa-rotate"></i> Gerar dos Cadastros</button>
         <button class="btn-sec hidden" id="btn-importar-enderecos" onclick="abrirModalImportarEnderecos()"><i class="fas fa-file-import"></i> Importar em Lote</button>
         <button class="btn-pri hidden" id="btn-novo-endereco" onclick="abrirFormEndereco()"><i class="fas fa-plus"></i> Novo Endereçamento</button>
       </div>
@@ -1653,6 +1654,7 @@ function atualizarInterfacePermissoes() {
   document.getElementById("btn-nav-cad-ext").classList.toggle("hidden", !canCreate);
   document.getElementById("btn-novo-endereco")?.classList.toggle("hidden", !canCreate);
   document.getElementById("btn-importar-enderecos")?.classList.toggle("hidden", !canCreate);
+  document.getElementById("btn-sincronizar-contatos-end")?.classList.toggle("hidden", !canCreate);
   
   // Guard button elements inside screens
   const btnNovoTel = document.querySelector(".btn-pri[onclick='abrirModalTelefone()']");
@@ -3873,6 +3875,72 @@ window.processarImportacaoEnderecos = async () => {
   } catch(e) {
     console.error("Erro na importação em lote:", e);
     toast("erro", "Erro ao importar endereçamentos: " + e.message);
+  } finally {
+    mostrarLoading(false);
+  }
+};
+
+window.gerarEnderecosDeContatos = async () => {
+  if (!checkPermission("create")) {
+    toast("erro", "Você não tem permissão para gerar endereçamentos.");
+    return;
+  }
+  mostrarLoading(true);
+  try {
+    const snapContatos = await getDocs(collection(db, "contatos"));
+    const contatos = snapContatos.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (!contatos.length) {
+      toast("aviso", "Nenhum contato cadastrado foi encontrado no banco de dados.");
+      return;
+    }
+
+    let batch = writeBatch(db);
+    let count = 0;
+    let totalGerados = 0;
+
+    for (const c of contatos) {
+      const isCom = c.tipo === "COMUNICACAO" || c.tipo === "INTERNO";
+      const nome = isCom ? (c.diretor || c.unidade || c.nome || "") : (c.nome || "");
+      const cargo = isCom ? (c.diretor ? `Diretor(a) / ${c.unidade}` : c.unidade) : (c.cargo || "");
+      const orgao = isCom ? (c.unidade || "TJGO") : (c.orgao || "");
+
+      const dados = {
+        tipo: "simples",
+        tratamento: "A Sua Excelência",
+        vocativo: "Senhor(a) " + (c.cargo || c.unidade || "Diretor(a)") + ",",
+        nome: nome,
+        destinatario: nome,
+        cargo: cargo,
+        orgao: orgao,
+        local: "N E S T A",
+        localData: "N E S T A",
+        contatoOrigemId: c.id,
+        criadoEm: serverTimestamp()
+      };
+
+      const newRef = doc(collection(db, "enderecos"));
+      batch.set(newRef, dados);
+      count++;
+      totalGerados++;
+
+      if (count === 400) {
+        await batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+
+    await logAction("Geração de Endereçamentos", `Gerou ${totalGerados} endereçamentos a partir dos cadastros de contatos.`);
+    toast("ok", `${totalGerados} endereçamentos gerados a partir dos seus contatos cadastrados!`);
+    await carregarEnderecos();
+  } catch (e) {
+    console.error("Erro ao gerar endereçamentos de contatos:", e);
+    toast("erro", "Erro ao gerar endereçamentos a partir dos cadastros.");
   } finally {
     mostrarLoading(false);
   }
