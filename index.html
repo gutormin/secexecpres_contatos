@@ -899,6 +899,9 @@
       <button class="topbar-btn" id="btn-nav-telefones" onclick="irPara('telefones')">
         <i class="fas fa-phone-volume"></i><span>Tel. Úteis</span>
       </button>
+      <button class="topbar-btn" id="btn-nav-comissoes" onclick="irPara('comissoes')">
+        <i class="fas fa-building-columns"></i><span>Comissões</span>
+      </button>
       <button class="topbar-btn hidden" id="btn-nav-enderecos" onclick="irPara('enderecos')">
         <i class="fas fa-envelope-open-text"></i><span>Endereçamentos</span>
       </button>
@@ -955,6 +958,12 @@
         <div class="card-ico"><i class="fas fa-phone-volume"></i></div>
         <h3>Telefones Úteis</h3>
         <p>Lista rápida de servidores com telefone fixo, celular e e-mail de contato</p>
+        <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+      </div>
+      <div class="inicio-card card-com" onclick="irPara('comissoes')">
+        <div class="card-ico"><i class="fas fa-building-columns"></i></div>
+        <h3>Comissões e Comitês</h3>
+        <p>Composição, responsável e contatos dos colegiados do TJGO, atualizados do site oficial</p>
         <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
       </div>
       <div class="inicio-card card-ext hidden" id="card-inicio-enderecos" onclick="irPara('enderecos')">
@@ -1241,6 +1250,44 @@
   </section>
 
   <!-- ══ TELA MÓDULO DE ENDEREÇAMENTOS ══ -->
+  <!-- ══ TELA COMISSÕES E COMITÊS ══ -->
+  <section id="tela-comissoes" class="tela">
+    <div class="tela-header">
+      <div class="tela-header-left">
+        <button class="btn-voltar" onclick="irPara('inicio')"><i class="fas fa-arrow-left"></i></button>
+        <div class="tela-titulo">
+          <h2>Comissões e Comitês <span class="db-sync-indicator" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#059669;background:#D1FAE5;padding:4px 10px;border-radius:20px;text-transform:uppercase;"><i class="fas fa-wifi"></i> Banco Online</span></h2>
+          <p>Composição, responsável e contatos dos colegiados do TJGO</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-sec" onclick="window.open('https://www.tjgo.jus.br/index.php/comissoes-comites/apresentacao','_blank','noopener')"><i class="fas fa-up-right-from-square"></i> Site do TJGO</button>
+      </div>
+    </div>
+
+    <div id="cm-aviso" class="hidden" style="margin-bottom:16px"></div>
+
+    <div class="consulta-toolbar">
+      <div class="consulta-search-row">
+        <div class="search-box" style="flex:1">
+          <i class="fas fa-search"></i>
+          <input type="text" id="input-busca-cm" placeholder="Buscar por nome do colegiado, membro, responsável ou e-mail..." oninput="window.filtrarComissoes()"/>
+        </div>
+      </div>
+      <div class="consulta-filters">
+        <div class="tipo-tabs">
+          <button class="tipo-tab ativo-todos btn-filt-tipo" id="tab-cm-todos" onclick="setFiltroComissao('')">Todos <span id="cm-c-todos">0</span></button>
+          <button class="tipo-tab btn-filt-tipo" id="tab-cm-permanente" onclick="setFiltroComissao('permanente')"><i class="fas fa-landmark"></i> Permanentes <span id="cm-c-permanente">0</span></button>
+          <button class="tipo-tab btn-filt-tipo" id="tab-cm-comissao" onclick="setFiltroComissao('comissao')"><i class="fas fa-users-line"></i> Comissões <span id="cm-c-comissao">0</span></button>
+          <button class="tipo-tab btn-filt-tipo" id="tab-cm-comite" onclick="setFiltroComissao('comite')"><i class="fas fa-people-group"></i> Comitês <span id="cm-c-comite">0</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;font-size:13px;color:var(--g500)" id="cm-result-info">Carregando...</div>
+    <div class="contatos-grid" id="container-comissoes"></div>
+  </section>
+
   <section id="tela-enderecos" class="tela">
     <div class="tela-header">
       <div class="tela-header-left">
@@ -1250,8 +1297,7 @@
           <p>Cabeçalhos oficiais para expedição de Ofícios Simples e Circulares</p>
         </div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn-sec hidden" id="btn-sincronizar-contatos-end" onclick="gerarEnderecosDeContatos()" title="Gerar endereçamentos automaticamente a partir de todos os contatos cadastrados"><i class="fas fa-rotate"></i> Gerar dos Cadastros</button>
+      <div style="display:flex;gap:10px;">
         <button class="btn-sec hidden" id="btn-importar-enderecos" onclick="abrirModalImportarEnderecos()"><i class="fas fa-file-import"></i> Importar em Lote</button>
         <button class="btn-pri hidden" id="btn-novo-endereco" onclick="abrirFormEndereco()"><i class="fas fa-plus"></i> Novo Endereçamento</button>
       </div>
@@ -1493,6 +1539,108 @@
   </div>
 </div>
 
+<!-- MODAL: DETALHE DA COMISSÃO / COMITÊ -->
+<div id="modal-comissao" class="modal-overlay hidden">
+  <div class="modal-box xl">
+    <div class="ver-stripe" id="cm-ver-stripe"></div>
+    <div class="modal-head">
+      <h3 id="cm-ver-titulo"><i class="fas fa-users-line"></i> Comissão</h3>
+      <button class="modal-close" onclick="fecharModal('modal-comissao')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="cm-ver-body"></div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="fecharModal('modal-comissao')"><i class="fas fa-times"></i> Fechar</button>
+      <button class="btn-pri hidden" id="cm-btn-manual"><i class="fas fa-pen"></i> Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CAMPOS PREENCHIDOS À MÃO (ADM) -->
+<div id="modal-cm-manual" class="modal-overlay hidden">
+  <div class="modal-box xl">
+    <div class="modal-head">
+      <h3><i class="fas fa-pen"></i> Editar colegiado</h3>
+      <button class="modal-close" onclick="fecharModal('modal-cm-manual')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--g500);margin-bottom:16px;line-height:1.5">
+        Edição restrita a administradores. Quando o site do TJGO mudar, a confirmação
+        sobrescreve <strong>apenas os campos que mudaram lá</strong> — o resto do que você
+        escrever aqui permanece.
+      </p>
+
+      <div class="form-group">
+        <label>Nome do colegiado *</label>
+        <input type="text" id="cm-ed-nome" placeholder="Comitê de ..."/>
+      </div>
+
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="cm-ed-tipo">
+          <option value="permanente">Comissão Permanente do Regimento</option>
+          <option value="comissao">Comissão</option>
+          <option value="comite">Comitê</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Responsável / quem atende</label>
+        <input type="text" id="cm-ed-responsavel" placeholder="Nome de quem responde pelo colegiado"/>
+      </div>
+
+      <div class="form-group">
+        <label>Telefones <span style="font-weight:400;color:var(--g400)">(separe por vírgula)</span></label>
+        <input type="text" id="cm-ed-telefones" placeholder="(62) 3216-0000, (62) 99999-0000"/>
+      </div>
+
+      <div class="form-group">
+        <label>E-mails <span style="font-weight:400;color:var(--g400)">(separe por vírgula)</span></label>
+        <input type="text" id="cm-ed-emails" placeholder="colegiado@tjgo.jus.br"/>
+      </div>
+
+      <div class="form-group">
+        <label>Composição <span style="font-weight:400;color:var(--g400)">— uma pessoa por linha</span></label>
+        <textarea id="cm-ed-membros" rows="12" spellcheck="false"
+          style="font-family:ui-monospace,Consolas,monospace;font-size:12.5px;line-height:1.6"
+          placeholder="Nome da pessoa | Cargo"></textarea>
+        <div style="font-size:11.5px;color:var(--g500);margin-top:6px;line-height:1.6">
+          Formato de cada linha: <code>Nome | Cargo</code> (o cargo é opcional).<br>
+          Comece com <code>*</code> para marcar quem preside ou coordena: <code>* Fulana de Tal | Presidente</code>.<br>
+          Para separar grupos, use uma linha só com <code>## Membros 1º Grau</code>.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Observações internas</label>
+        <textarea id="cm-ed-obs" rows="3" placeholder="Anotações que não vêm do site"></textarea>
+      </div>
+
+      <label class="check-oculto" style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="cm-ed-oculto"/>
+        <span>Ocultar este colegiado das consultas gerais (apenas Administradores)</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="fecharModal('modal-cm-manual')">Cancelar</button>
+      <button class="btn-pri" onclick="salvarComissao()"><i class="fas fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ALTERAÇÕES DETECTADAS NO SITE, AGUARDANDO CONFIRMAÇÃO -->
+<div id="modal-cm-alteracoes" class="modal-overlay hidden">
+  <div class="modal-box xl">
+    <div class="modal-head">
+      <h3><i class="fas fa-list-check"></i> Alterações detectadas no site do TJGO</h3>
+      <button class="modal-close" onclick="fecharModal('modal-cm-alteracoes')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="cm-alt-body"></div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="fecharModal('modal-cm-alteracoes')"><i class="fas fa-times"></i> Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CONFIRMAR EXCLUIR -->
 <div id="modal-confirmar" class="modal-overlay hidden">
   <div class="modal-box" style="max-width:420px">
@@ -1654,7 +1802,6 @@ function atualizarInterfacePermissoes() {
   document.getElementById("btn-nav-cad-ext").classList.toggle("hidden", !canCreate);
   document.getElementById("btn-novo-endereco")?.classList.toggle("hidden", !canCreate);
   document.getElementById("btn-importar-enderecos")?.classList.toggle("hidden", !canCreate);
-  document.getElementById("btn-sincronizar-contatos-end")?.classList.toggle("hidden", !canCreate);
   
   // Guard button elements inside screens
   const btnNovoTel = document.querySelector(".btn-pri[onclick='abrirModalTelefone()']");
@@ -2086,11 +2233,12 @@ window.irPara = (tela) => {
   if (elTela) elTela.classList.add("ativa");
 
   document.querySelectorAll(".topbar-btn").forEach(b => b.classList.remove("ativo"));
-  const mapa = { inicio:"btn-nav-inicio", consulta:"btn-nav-consulta", telefones:"btn-nav-telefones", enderecos:"btn-nav-enderecos", "backup-audit":"btn-nav-backup-audit" };
+  const mapa = { inicio:"btn-nav-inicio", consulta:"btn-nav-consulta", telefones:"btn-nav-telefones", comissoes:"btn-nav-comissoes", enderecos:"btn-nav-enderecos", "backup-audit":"btn-nav-backup-audit" };
   if (mapa[tela]) document.getElementById(mapa[tela])?.classList.add("ativo");
   window.scrollTo(0,0);
   if (tela === "consulta")  carregarContatos();
   if (tela === "telefones") carregarTelefones();
+  if (tela === "comissoes") carregarComissoes();
   if (tela === "enderecos") carregarEnderecos();
   if (tela === "backup-audit") carregarAuditoria();
 };
@@ -3150,92 +3298,88 @@ const POR_PAGINA_ENDERECOS = 12;
 
 window.carregarEnderecos = async () => {
   mostrarLoading(true);
-  const itensPadrao = [
-    {
-      tipo: 'simples',
-      tratamento: 'A Sua Excelência a Senhora',
-      vocativo: 'Senhora Desembargadora 2ª Vice-Presidente,',
-      nome: 'Desembargadora ROZANA FERNANDES CAMAPUM',
-      destinatario: 'Desembargadora ROZANA FERNANDES CAMAPUM',
-      cargo: '2ª Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
-      orgao: '',
-      local: 'N E S T A',
-      localData: 'N E S T A'
-    },
-    {
-      tipo: 'simples',
-      tratamento: 'A Sua Excelência o Senhor',
-      vocativo: 'Senhor Desembargador 1º Vice-Presidente,',
-      nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
-      destinatario: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
-      cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
-      orgao: 'Tribunal de Justiça do Estado de Goiás',
-      local: 'N E S T A',
-      localData: 'N E S T A'
-    },
-    {
-      tipo: 'circular',
-      vocativo: '',
-      textoCircular: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás',
-      destinatario: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás'
-    }
-  ];
-
   try {
     const snap = await getDocs(collection(db, "enderecos"));
-    
+
+    // Quando o servidor recusa a leitura (ex.: usuário sem permissão), o SDK não
+    // dá erro: ele devolve o cache local, que pode estar vazio. Sem esta guarda,
+    // o bloco abaixo entende "banco vazio" e cadastra os padrões por cima de uma
+    // base cheia. Se a resposta não veio do servidor, não se cria nada.
+    if (snap.metadata.fromCache) {
+      console.warn("Endereçamentos: resposta do cache local, não do servidor.");
+      toast("aviso", "Não foi possível ler os endereçamentos do servidor. Faça login como administrador e recarregue.");
+      todosEnderecos = [];
+      filtrarEnderecos(filtroTipoEndereco);
+      return;
+    }
+
+
+    const itensPadrao = [
+      {
+        tipo: 'simples',
+        tratamento: 'A Sua Excelência a Senhora',
+        vocativo: 'Senhora Desembargadora 2ª Vice-Presidente,',
+        nome: 'Desembargadora ROZANA FERNANDES CAMAPUM',
+        destinatario: 'Desembargadora ROZANA FERNANDES CAMAPUM',
+        cargo: '2ª Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
+        orgao: '',
+        local: 'N E S T A',
+        localData: 'N E S T A'
+      },
+      {
+        tipo: 'simples',
+        tratamento: 'A Sua Excelência o Senhor',
+        vocativo: 'Senhor Desembargador 1º Vice-Presidente,',
+        nome: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
+        destinatario: 'Desembargador FABIANO ABEL DE ARAGÃO FERNANDES',
+        cargo: '1º Vice-Presidente do Tribunal de Justiça do Estado de Goiás',
+        orgao: 'Tribunal de Justiça do Estado de Goiás',
+        local: 'N E S T A',
+        localData: 'N E S T A'
+      },
+      {
+        tipo: 'circular',
+        vocativo: '',
+        textoCircular: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás',
+        destinatario: 'Às Excelentíssimas Senhoras Magistradas e aos Excelentíssimos Senhores Magistrados de 1° e 2° graus do Poder Judiciário do Estado de Goiás'
+      }
+    ];
+
     if (snap.empty) {
-      todosEnderecos = itensPadrao.map((item, idx) => ({ id: "padrao_" + idx, ...item }));
       for (const item of itensPadrao) {
-        try {
-          await addDoc(collection(db, "enderecos"), {
-            ...item,
-            criadoEm: serverTimestamp()
-          });
-        } catch (errAdd) {
-          console.warn("Aviso ao criar item padrão no banco:", errAdd);
-        }
+        await addDoc(collection(db, "enderecos"), {
+          ...item,
+          criadoEm: serverTimestamp()
+        });
       }
-      try {
-        const snapNovo = await getDocs(collection(db, "enderecos"));
-        if (!snapNovo.empty) {
-          todosEnderecos = snapNovo.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-      } catch (errSnap) {
-        console.warn("Aviso ao recarregar snapNovo:", errSnap);
-      }
+      const snapNovo = await getDocs(collection(db, "enderecos"));
+      todosEnderecos = snapNovo.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } else {
       todosEnderecos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+      // Garante que se faltar a Desembargadora Rozana ou Ofício Circular de Magistrados, adiciona automaticamente no banco
       const jaTemRozana = todosEnderecos.some(e => (e.destinatario || e.nome || '').toUpperCase().includes('ROZANA'));
       if (!jaTemRozana) {
         const itemRozana = itensPadrao[0];
-        try {
-          const refDoc = await addDoc(collection(db, "enderecos"), {
-            ...itemRozana,
-            criadoEm: serverTimestamp()
-          });
-          todosEnderecos.push({ id: refDoc.id, ...itemRozana });
-        } catch (e) {
-          todosEnderecos.push({ id: "rozana_temp", ...itemRozana });
-        }
+        const refDoc = await addDoc(collection(db, "enderecos"), {
+          ...itemRozana,
+          criadoEm: serverTimestamp()
+        });
+        todosEnderecos.push({ id: refDoc.id, ...itemRozana });
       }
 
       const jaTemMagistrados = todosEnderecos.some(e => (e.textoCircular || e.destinatario || '').toUpperCase().includes('MAGISTRADOS'));
       if (!jaTemMagistrados) {
         const itemMagistrados = itensPadrao[2];
-        try {
-          const refDoc = await addDoc(collection(db, "enderecos"), {
-            ...itemMagistrados,
-            criadoEm: serverTimestamp()
-          });
-          todosEnderecos.push({ id: refDoc.id, ...itemMagistrados });
-        } catch (e) {
-          todosEnderecos.push({ id: "magistrados_temp", ...itemMagistrados });
-        }
+        const refDoc = await addDoc(collection(db, "enderecos"), {
+          ...itemMagistrados,
+          criadoEm: serverTimestamp()
+        });
+        todosEnderecos.push({ id: refDoc.id, ...itemMagistrados });
       }
     }
 
+    // Normaliza os itens carregados para corrigir dados legados onde tratamento estava salvo no campo vocativo
     todosEnderecos.forEach(item => {
       if (item.tipo === 'simples') {
         const voc = (item.vocativo || '').trim();
@@ -3243,21 +3387,17 @@ window.carregarEnderecos = async () => {
           if (!item.tratamento) {
             item.tratamento = voc;
           }
-          item.vocativo = '';
+          item.vocativo = ''; // Limpa vocativo para não repetir o tratamento
         }
       }
     });
 
-  } catch(e) {
-    console.error("Erro ao carregar endereçamentos do Firestore:", e);
-    todosEnderecos = itensPadrao.map((item, idx) => ({ id: "padrao_" + idx, ...item }));
-  } finally {
-    try {
-      await carregarTjgo();
-    } catch(errTjgo) {
-      console.warn("Erro no carregarTjgo:", errTjgo);
-    }
+    await carregarTjgo();
     filtrarEnderecos(filtroTipoEndereco);
+  } catch(e) {
+    console.error("Erro ao carregar endereçamentos:", e);
+    toast("erro", "Erro ao carregar endereçamentos do banco de dados.");
+  } finally {
     mostrarLoading(false);
   }
 };
@@ -3880,72 +4020,6 @@ window.processarImportacaoEnderecos = async () => {
   }
 };
 
-window.gerarEnderecosDeContatos = async () => {
-  if (!checkPermission("create")) {
-    toast("erro", "Você não tem permissão para gerar endereçamentos.");
-    return;
-  }
-  mostrarLoading(true);
-  try {
-    const snapContatos = await getDocs(collection(db, "contatos"));
-    const contatos = snapContatos.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    if (!contatos.length) {
-      toast("aviso", "Nenhum contato cadastrado foi encontrado no banco de dados.");
-      return;
-    }
-
-    let batch = writeBatch(db);
-    let count = 0;
-    let totalGerados = 0;
-
-    for (const c of contatos) {
-      const isCom = c.tipo === "COMUNICACAO" || c.tipo === "INTERNO";
-      const nome = isCom ? (c.diretor || c.unidade || c.nome || "") : (c.nome || "");
-      const cargo = isCom ? (c.diretor ? `Diretor(a) / ${c.unidade}` : c.unidade) : (c.cargo || "");
-      const orgao = isCom ? (c.unidade || "TJGO") : (c.orgao || "");
-
-      const dados = {
-        tipo: "simples",
-        tratamento: "A Sua Excelência",
-        vocativo: "Senhor(a) " + (c.cargo || c.unidade || "Diretor(a)") + ",",
-        nome: nome,
-        destinatario: nome,
-        cargo: cargo,
-        orgao: orgao,
-        local: "N E S T A",
-        localData: "N E S T A",
-        contatoOrigemId: c.id,
-        criadoEm: serverTimestamp()
-      };
-
-      const newRef = doc(collection(db, "enderecos"));
-      batch.set(newRef, dados);
-      count++;
-      totalGerados++;
-
-      if (count === 400) {
-        await batch.commit();
-        batch = writeBatch(db);
-        count = 0;
-      }
-    }
-
-    if (count > 0) {
-      await batch.commit();
-    }
-
-    await logAction("Geração de Endereçamentos", `Gerou ${totalGerados} endereçamentos a partir dos cadastros de contatos.`);
-    toast("ok", `${totalGerados} endereçamentos gerados a partir dos seus contatos cadastrados!`);
-    await carregarEnderecos();
-  } catch (e) {
-    console.error("Erro ao gerar endereçamentos de contatos:", e);
-    toast("erro", "Erro ao gerar endereçamentos a partir dos cadastros.");
-  } finally {
-    mostrarLoading(false);
-  }
-};
-
 
 /* ══════════════════════════
    ⚖️ LISTA DE JUÍZES DO TJGO
@@ -4388,4 +4462,521 @@ window.confirmarVinculoAutomatico = async () => {
     console.error(e); toast("erro", "Erro ao gravar os vínculos.");
   } finally { mostrarLoading(false); }
 };
+
+/* ══════════════════════════
+   🏛️ COMISSÕES E COMITÊS (TJGO)
+   Dado coletado pelo sincronizador que roda no PC; aqui só se lê e se confirma.
+══════════════════════════ */
+
+let cmTodas       = [];
+let cmFiltradas   = [];
+let cmPendentes   = [];
+let cmEstado      = null;
+let cmFiltroTipo  = "";
+let cmSlugAberto  = null;
+
+/* Toda interpolação de texto vindo do banco passa por aqui. O conteúdo vem de
+   fora (site do TJGO), então nada entra no HTML sem escapar. */
+const cmEsc = (v) => String(v ?? "").replace(/[&<>"']/g, c => (
+  { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+const CM_ROTULO = { permanente:"Permanente", comissao:"Comissão", comite:"Comitê" };
+const CM_CAMPO  = { nome:"Nome", responsavel:"Responsável", telefones:"Telefones",
+                    emails:"E-mails", membros:"Composição" };
+
+/* ── Carregar ───────────────────────────── */
+window.carregarComissoes = async () => {
+  mostrarLoading(true);
+  try {
+    // Quem não é ADM pede explicitamente só os visíveis: com regra restritiva,
+    // o Firestore recusa a consulta inteira se ela puder trazer documento proibido.
+    // A ordenação fica no cliente para não exigir índice composto.
+    const ref = collection(db, "comissoes");
+    const snap = await getDocs(checkPermission("admin") ? query(ref) : query(ref, where("oculto", "==", false)));
+    cmTodas = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+  } catch (e) {
+    console.error(e);
+    cmTodas = [];
+    toast("erro", "Erro ao carregar comissões.");
+  }
+
+  try {
+    const estadoSnap = await getDoc(doc(db, "comissoes_estado", "ultima"));
+    cmEstado = estadoSnap.exists() ? estadoSnap.data() : null;
+  } catch (e) { cmEstado = null; }
+
+  cmPendentes = [];
+  if (checkPermission("admin")) {
+    try {
+      const altSnap = await getDocs(query(collection(db, "comissoes_alteracoes"),
+                                          where("status", "==", "pendente")));
+      cmPendentes = altSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { console.warn("Pendências indisponíveis:", e?.message || e); }
+  }
+
+  cmContadores();
+  cmRenderAviso();
+  window.filtrarComissoes();
+  mostrarLoading(false);
+};
+
+const cmVisiveis = () => {
+  const isAdmin = checkPermission("admin");
+  return cmTodas.filter(c => !c.oculto || isAdmin);
+};
+
+function cmContadores() {
+  const v = cmVisiveis();
+  document.getElementById("cm-c-todos").textContent      = v.length;
+  document.getElementById("cm-c-permanente").textContent = v.filter(c => c.tipo === "permanente").length;
+  document.getElementById("cm-c-comissao").textContent   = v.filter(c => c.tipo === "comissao").length;
+  document.getElementById("cm-c-comite").textContent     = v.filter(c => c.tipo === "comite").length;
+}
+
+/* ── Aviso de pendências e de coleta atrasada ── */
+function cmDiasDesde(txt) {
+  const m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(txt || "");
+  if (!m) return null;
+  const d = new Date(+m[3], +m[2] - 1, +m[1]);
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+function cmRenderAviso() {
+  const el = document.getElementById("cm-aviso");
+  if (!el) return;
+
+  const dias = cmDiasDesde(cmEstado?.quando);
+  const atrasada = dias !== null && dias >= 2;
+  const rodape = cmEstado
+    ? `Última varredura: ${cmEsc(cmEstado.quando)} · ${cmEstado.total || 0} páginas lidas`
+    : "Nenhuma varredura registrada ainda.";
+  const alertaAtraso = atrasada
+    ? ` <span style="color:var(--red);font-weight:700">· Sem varredura há ${dias} dias — verifique se o computador está ligado.</span>`
+    : "";
+
+  // a fila de pendências é assunto de administrador, aqui e nas regras do banco
+  if (!cmPendentes.length || !checkPermission("admin")) {
+    el.classList.remove("hidden");
+    el.innerHTML = `<div style="font-size:12.5px;color:var(--g500);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <i class="fas fa-building-columns"></i>
+      <span>Nenhuma alteração pendente. ${rodape}${alertaAtraso}</span></div>`;
+    return;
+  }
+
+  const inclusoes = cmPendentes.filter(a => a.especie === "inclusao").length;
+  el.classList.remove("hidden");
+  el.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:12px;
+                background:var(--amber-l);border:1px solid var(--amber)">
+      <div style="font-size:13.5px;line-height:1.5;color:var(--g800)">
+        <i class="fas fa-triangle-exclamation" style="color:var(--amber)"></i>
+        <strong>${cmPendentes.length} alteração(ões) no site do TJGO aguardando sua confirmação</strong>
+        ${inclusoes ? ` · ${inclusoes} colegiado(s) novo(s)` : ""}
+        <div style="font-size:12px;color:var(--g500)">${rodape}${alertaAtraso}</div>
+      </div>
+      <button class="btn-pri" style="padding:8px 14px;font-size:13px" onclick="abrirModalCmAlteracoes()">
+        <i class="fas fa-list-check"></i> Revisar alterações</button>
+    </div>`;
+}
+
+/* ── Filtros ───────────────────────────── */
+window.setFiltroComissao = (tipo) => {
+  cmFiltroTipo = tipo;
+  ["todos", "permanente", "comissao", "comite"].forEach(t => {
+    const b = document.getElementById("tab-cm-" + t);
+    if (b) b.className = "tipo-tab btn-filt-tipo" + ((tipo || "todos") === t ? " ativo-todos" : "");
+  });
+  window.filtrarComissoes();
+};
+
+window.filtrarComissoes = () => {
+  const busca = (document.getElementById("input-busca-cm")?.value || "").toLowerCase().trim();
+  cmFiltradas = cmVisiveis().filter(c => {
+    if (cmFiltroTipo && c.tipo !== cmFiltroTipo) return false;
+    if (!busca) return true;
+    const alvo = [
+      c.nome, c.responsavel, c.manual?.responsavel,
+      (c.emails || []).join(" "), (c.manual?.emails || []).join(" "),
+      (c.telefones || []).map(t => t.numero).join(" "), (c.manual?.telefones || []).join(" "),
+      (c.membros || []).map(m => m.nome + " " + (m.cargo || "")).join(" "),
+    ].join(" ").toLowerCase();
+    return alvo.includes(busca);
+  });
+  cmRender();
+};
+
+/* ── Grid ───────────────────────────── */
+function cmTelefones(c) {
+  return [...(c.telefones || []).map(t => t.numero), ...(c.manual?.telefones || [])].filter(Boolean);
+}
+function cmEmails(c) {
+  return [...(c.emails || []), ...(c.manual?.emails || [])].filter(Boolean);
+}
+function cmResponsavel(c) {
+  return c.manual?.responsavel || c.responsavel || "";
+}
+
+function cmRender() {
+  const cont = document.getElementById("container-comissoes");
+  const info = document.getElementById("cm-result-info");
+  if (!cont) return;
+
+  if (!cmTodas.length) {
+    info.textContent = "";
+    cont.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--g400)">
+      <i class="fas fa-building-columns" style="font-size:40px;opacity:.35"></i>
+      <h3 style="margin-top:14px;font-size:16px;color:var(--g600)">Nenhum colegiado cadastrado ainda</h3>
+      <p style="font-size:13px;margin-top:6px">A primeira varredura ainda não rodou no computador.</p></div>`;
+    return;
+  }
+
+  info.textContent = `${cmFiltradas.length} colegiado${cmFiltradas.length !== 1 ? "s" : ""}`;
+
+  if (!cmFiltradas.length) {
+    cont.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--g400)">
+      <i class="fas fa-magnifying-glass" style="font-size:36px;opacity:.35"></i>
+      <h3 style="margin-top:14px;font-size:15px;color:var(--g600)">Nada encontrado para esta busca</h3></div>`;
+    return;
+  }
+
+  cont.innerHTML = cmFiltradas.map(c => {
+    const tels = cmTelefones(c), mails = cmEmails(c), resp = cmResponsavel(c);
+    const presidente = (c.membros || []).find(m => m.chefia);
+    const inicial = (c.nome || "?").replace(/^(Comiss[ãa]o|Comit[êe])\s+/i, "").charAt(0).toUpperCase();
+    const det = [];
+    if (presidente) det.push(["fa-user-tie", "Preside / coordena", presidente.nome]);
+    if (resp) det.push(["fa-headset", "Responsável", resp]);
+    if (tels[0]) det.push(["fa-phone", "Telefone", tels[0]]);
+    if (mails[0]) det.push(["fa-envelope", "E-mail", mails[0]]);
+
+    return `
+    <div class="cc tipo-${c.tipo === "comite" ? "ext" : "com"}" onclick="verComissao('${cmEsc(c.id)}')">
+      <div class="cc-stripe"></div>
+      <div class="cc-body">
+        <div class="cc-top">
+          <div class="cc-av">${cmEsc(inicial)}</div>
+          <div class="cc-info"><div class="cc-nome">${cmEsc(c.nome)}</div></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="cc-badge">${cmEsc(CM_ROTULO[c.tipo] || c.tipo)}</span>
+            ${c.oculto ? `<span class="badge-oculto"><i class="fas fa-eye-slash"></i> Oculto</span>` : ""}
+          </div>
+        </div>
+        <div class="cc-details">
+          <div class="cc-det">
+            <i class="fas fa-users" style="color:var(--g400)"></i>
+            <div><span class="cc-det-label">Composição</span>
+            <span class="cc-det-val">${(c.membros || []).length} integrante(s)</span></div>
+          </div>
+          ${det.map(([ico, rot, val]) => `
+          <div class="cc-det">
+            <i class="fas ${ico}" style="color:var(--g400)"></i>
+            <div><span class="cc-det-label">${cmEsc(rot)}</span>
+            <span class="cc-det-val">${cmEsc(val)}</span></div>
+          </div>`).join("")}
+        </div>
+      </div>
+      <div class="cc-foot" onclick="event.stopPropagation()">
+        <button class="cc-btn view" onclick="verComissao('${cmEsc(c.id)}')"><i class="fas fa-eye"></i> Ver</button>
+        ${checkPermission("admin") ? `<button class="cc-btn edit" onclick="abrirEditarComissao('${cmEsc(c.id)}')"><i class="fas fa-pen"></i> Editar</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ── Detalhe ───────────────────────────── */
+window.verComissao = (slug) => {
+  const c = cmTodas.find(x => x.id === slug);
+  if (!c) return;
+  cmSlugAberto = slug;
+
+  document.getElementById("cm-ver-titulo").innerHTML =
+    `<i class="fas fa-users-line"></i> ${cmEsc(c.nome)}`;
+  const stripe = document.getElementById("cm-ver-stripe");
+  if (stripe) stripe.style.background = c.tipo === "comite" ? "var(--ext)" : "var(--com)";
+
+  const tels = cmTelefones(c), mails = cmEmails(c), resp = cmResponsavel(c);
+
+  // membros, agrupados quando a página de origem tem mais de uma lista
+  const grupos = {};
+  (c.membros || []).forEach(m => {
+    const g = m.grupo || "";
+    (grupos[g] = grupos[g] || []).push(m);
+  });
+  const listaMembros = Object.entries(grupos).map(([g, itens]) => `
+    ${g ? `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--g500);margin:14px 0 6px">${cmEsc(g)}</div>` : ""}
+    <ol style="margin:0 0 4px 18px;padding:0;display:grid;gap:5px">
+      ${itens.map(m => `<li style="font-size:13.5px;line-height:1.45;color:var(--g800)">
+        <strong>${cmEsc(m.nome)}</strong>${m.chefia ? ` <span class="cc-badge" style="font-size:10px;padding:1px 7px">preside</span>` : ""}
+        ${m.cargo ? `<div style="color:var(--g500);font-size:12.5px">${cmEsc(m.cargo)}</div>` : ""}
+      </li>`).join("")}
+    </ol>`).join("");
+
+  const linha = (ico, rot, val, copiavel) => !val ? "" : `
+    <div class="cc-det" style="padding:8px 0">
+      <i class="fas ${ico}" style="color:var(--g400)"></i>
+      <div><span class="cc-det-label">${cmEsc(rot)}</span>
+      <span class="cc-det-val ${copiavel ? "copyable" : ""}"
+        ${copiavel ? `onclick="copiarTexto('${cmEsc(val)}', this)" title="Clique para copiar"` : ""}>${cmEsc(val)}</span></div>
+    </div>`;
+
+  document.getElementById("cm-ver-body").innerHTML = `
+    <div style="display:grid;gap:18px">
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--g500);margin-bottom:8px">Contato</div>
+        ${linha("fa-user-tie", "Responsável", resp, false) || `<div style="font-size:13px;color:var(--g400)">Não informado no site do TJGO. ${checkPermission("admin") ? "Use “Editar” para preencher." : ""}</div>`}
+        ${tels.map(t => linha("fa-phone", "Telefone", t, true)).join("")}
+        ${mails.map(m => linha("fa-envelope", "E-mail", m, true)).join("")}
+        ${c.manual?.obs ? `<div style="margin-top:10px;font-size:13px;color:var(--g600);background:var(--g50);padding:10px 12px;border-radius:8px;white-space:pre-wrap">${cmEsc(c.manual.obs)}</div>` : ""}
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--g500)">
+          Composição · ${(c.membros || []).length} integrante(s)</div>
+        ${listaMembros || `<div style="font-size:13px;color:var(--g400);margin-top:6px">Sem composição registrada.</div>`}
+      </div>
+
+      <div style="font-size:12px;color:var(--g400);border-top:1px solid var(--g200);padding-top:12px;line-height:1.6">
+        Fonte: <a href="${cmEsc(c.url)}" target="_blank" rel="noopener" style="color:var(--primary)">página oficial no site do TJGO</a><br>
+        Atualizado no site em ${cmEsc(c.atualizacaoSite || "data não informada")}${c.atualizadoEm ? ` · sincronizado aqui em ${cmEsc(c.atualizadoEm)}` : ""}
+      </div>
+    </div>`;
+
+  const btn = document.getElementById("cm-btn-manual");
+  btn.classList.toggle("hidden", !checkPermission("admin"));
+  btn.onclick = () => { fecharModal("modal-comissao"); abrirEditarComissao(slug); };
+  abrirModal("modal-comissao");
+};
+
+/* ── Campos manuais (ADM) ───────────────── */
+window.abrirEditarComissao = (slug) => {
+  if (!checkPermission("admin")) { toast("aviso", "Acesso restrito a administradores."); return; }
+  const c = cmTodas.find(x => x.id === slug);
+  if (!c) return;
+  cmSlugAberto = slug;
+
+  document.getElementById("cm-ed-nome").value        = c.nome || "";
+  document.getElementById("cm-ed-tipo").value        = c.tipo || "comite";
+  document.getElementById("cm-ed-responsavel").value = cmResponsavel(c);
+  document.getElementById("cm-ed-telefones").value   = cmTelefones(c).join(", ");
+  document.getElementById("cm-ed-emails").value      = cmEmails(c).join(", ");
+  document.getElementById("cm-ed-membros").value     = cmMembrosParaTexto(c.membros || []);
+  document.getElementById("cm-ed-obs").value         = c.manual?.obs || c.obs || "";
+  document.getElementById("cm-ed-oculto").checked    = !!c.oculto;
+  abrirModal("modal-cm-manual");
+};
+
+/* Composição <-> texto editável.
+   "## Grupo" abre um grupo; "* " marca quem preside; "Nome | Cargo". */
+function cmMembrosParaTexto(membros) {
+  const linhas = [];
+  let grupoAtual = null;
+  membros.forEach(m => {
+    const g = m.grupo || null;
+    if (g !== grupoAtual) {
+      if (g) linhas.push((linhas.length ? "\n" : "") + "## " + g);
+      grupoAtual = g;
+    }
+    linhas.push((m.chefia ? "* " : "") + m.nome + (m.cargo ? " | " + m.cargo : ""));
+  });
+  return linhas.join("\n");
+}
+
+function cmTextoParaMembros(texto) {
+  const membros = [];
+  let grupo = "";
+  (texto || "").split("\n").forEach(bruta => {
+    const linha = bruta.trim();
+    if (!linha) return;
+    if (linha.startsWith("##")) { grupo = linha.replace(/^#+\s*/, "").trim(); return; }
+    let chefia = false, resto = linha;
+    if (resto.startsWith("*")) { chefia = true; resto = resto.slice(1).trim(); }
+    const corte = resto.indexOf("|");
+    const nome  = (corte >= 0 ? resto.slice(0, corte) : resto).trim();
+    const cargo = corte >= 0 ? resto.slice(corte + 1).trim() : "";
+    if (!nome) return;
+    const item = { nome, cargo, chefia };
+    if (grupo) item.grupo = grupo;
+    membros.push(item);
+  });
+  return membros;
+}
+
+window.salvarComissao = async () => {
+  if (!checkPermission("admin")) { toast("erro", "Acesso negado."); return; }
+  const c = cmTodas.find(x => x.id === cmSlugAberto);
+  if (!c) return;
+
+  const nome = document.getElementById("cm-ed-nome").value.trim();
+  if (!nome) { toast("aviso", "O nome do colegiado é obrigatório."); return; }
+
+  const lista = (id) => (document.getElementById(id).value || "")
+    .split(",").map(s => s.trim()).filter(Boolean);
+
+  const dados = {
+    nome,
+    tipo:        document.getElementById("cm-ed-tipo").value,
+    responsavel: document.getElementById("cm-ed-responsavel").value.trim(),
+    telefones:   lista("cm-ed-telefones").map(n => ({ numero: n })),
+    emails:      lista("cm-ed-emails"),
+    membros:     cmTextoParaMembros(document.getElementById("cm-ed-membros").value),
+    oculto:      document.getElementById("cm-ed-oculto").checked,
+    manual:      { ...(c.manual || {}), obs: document.getElementById("cm-ed-obs").value.trim(),
+                   telefones: [], emails: [], responsavel: "" },
+    editadoEm:   new Date().toLocaleString("pt-BR"),
+  };
+
+  mostrarLoading(true);
+  try {
+    await updateDoc(doc(db, "comissoes", cmSlugAberto), dados);
+    await logAction("Comissões", `Editou o colegiado: ${nome}`);
+    fecharModal("modal-cm-manual");
+    toast("ok", "Colegiado atualizado.");
+    await window.carregarComissoes();
+  } catch (e) {
+    console.error(e);
+    toast("erro", "Erro ao salvar: " + e.message);
+  } finally { mostrarLoading(false); }
+};
+
+/* ── Confirmação das alterações vindas do site ── */
+window.abrirModalCmAlteracoes = () => {
+  if (!checkPermission("admin")) { toast("aviso", "Acesso restrito a administradores."); return; }
+  cmRenderAlteracoes();
+  abrirModal("modal-cm-alteracoes");
+};
+
+function cmRenderAlteracoes() {
+  const body = document.getElementById("cm-alt-body");
+  if (!body) return;
+  if (!cmPendentes.length) {
+    body.innerHTML = `<div style="text-align:center;padding:36px;color:var(--g400)">
+      <i class="fas fa-circle-check" style="font-size:34px;opacity:.4"></i>
+      <p style="margin-top:12px;font-size:14px">Nenhuma alteração pendente.</p></div>`;
+    return;
+  }
+
+  body.innerHTML = cmPendentes.map(a => {
+    const nova = a.especie === "inclusao";
+    const corpo = nova
+      ? `<div style="font-size:13px;color:var(--g600)">
+           Colegiado novo no site, com ${(a.novoDoc?.membros || []).length} integrante(s).
+         </div>`
+      : `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px">
+          <tr>
+            <th style="text-align:left;padding:5px 8px;font-size:11px;text-transform:uppercase;color:var(--g500);border-bottom:1px solid var(--g200)">Campo</th>
+            <th style="text-align:left;padding:5px 8px;font-size:11px;text-transform:uppercase;color:var(--g500);border-bottom:1px solid var(--g200)">Antes</th>
+            <th style="text-align:left;padding:5px 8px;font-size:11px;text-transform:uppercase;color:var(--g500);border-bottom:1px solid var(--g200)">Depois</th>
+          </tr>
+          ${(a.mudancas || []).map(m => `<tr>
+            <td style="padding:6px 8px;vertical-align:top;font-weight:600;border-bottom:1px solid var(--g200)">${cmEsc(CM_CAMPO[m.campo] || m.campo)}</td>
+            <td style="padding:6px 8px;vertical-align:top;border-bottom:1px solid var(--g200);background:#FEE2E2;color:#991B1B">${cmEsc(m.antes) || "—"}</td>
+            <td style="padding:6px 8px;vertical-align:top;border-bottom:1px solid var(--g200);background:#D1FAE5;color:#065F46">${cmEsc(m.depois) || "—"}</td>
+          </tr>`).join("")}
+        </table></div>`;
+
+    return `
+      <div style="border:1px solid var(--g200);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;justify-content:space-between">
+          <div>
+            <strong style="font-size:14px;color:var(--g900)">${cmEsc(a.nome)}</strong>
+            <span class="cc-badge" style="margin-left:6px">${nova ? "novo" : "alteração"}</span>
+            <div style="font-size:11.5px;color:var(--g400);margin-top:2px">
+              Detectado em ${cmEsc(a.detectadoEm)} ·
+              <a href="${cmEsc(a.url)}" target="_blank" rel="noopener" style="color:var(--primary)">ver no site</a>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sec" style="padding:6px 12px;font-size:12px" onclick="cmIgnorar('${cmEsc(a.id)}')">
+              <i class="fas fa-xmark"></i> Ignorar</button>
+            <button class="btn-pri" style="padding:6px 12px;font-size:12px" onclick="cmAplicar('${cmEsc(a.id)}')">
+              <i class="fas fa-check"></i> Aplicar</button>
+          </div>
+        </div>
+        ${corpo}
+      </div>`;
+  }).join("");
+}
+
+/* Duas pessoas podem estar com esta tela aberta ao mesmo tempo: antes de aplicar,
+   relê a pendência e confere se ela ainda está pendente. */
+async function cmPendenciaAindaValida(id) {
+  const ref = doc(db, "comissoes_alteracoes", id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    toast("aviso", "Esta alteração não existe mais.");
+    return null;
+  }
+  const dados = snap.data();
+  if (dados.status !== "pendente") {
+    toast("aviso", `Esta alteração já foi tratada por ${dados.confirmadoPor || "outro usuário"}.`);
+    return null;
+  }
+  return { ref, dados };
+}
+
+window.cmAplicar = async (id) => {
+  if (!checkPermission("admin")) { toast("erro", "Acesso negado."); return; }
+  mostrarLoading(true);
+  try {
+    const valida = await cmPendenciaAindaValida(id);
+    if (!valida) { await window.carregarComissoes(); cmRenderAlteracoes(); return; }
+    const { ref, dados } = valida;
+
+    const atual = cmTodas.find(x => x.id === dados.slug);
+    const doSite = dados.novoDoc || {};
+
+    let novo;
+    if (dados.especie === "inclusao" || !atual) {
+      novo = { ...doSite };
+    } else {
+      // Grava SOMENTE os campos que mudaram no site. O que o administrador
+      // editou à mão em outros campos continua intacto.
+      novo = {};
+      (dados.mudancas || []).forEach(m => {
+        if (m.campo in doSite) novo[m.campo] = doSite[m.campo];
+      });
+      novo.site = doSite.site || doSite;      // cópia do que o site diz hoje
+      novo.hash = doSite.hash;
+      novo.atualizadoEm = doSite.atualizadoEm;
+      novo.atualizacaoSite = doSite.atualizacaoSite;
+    }
+
+    await setDoc(doc(db, "comissoes", dados.slug), novo, { merge: true });
+    await updateDoc(ref, {
+      status: "aplicada",
+      confirmadoPor: currentUserData?.nome || auth.currentUser?.email || "ADM",
+      confirmadoEm: serverTimestamp(),
+    });
+    await logAction("Comissões", `Aplicou alteração do site em: ${dados.nome}`);
+    toast("ok", "Alteração aplicada.");
+    await window.carregarComissoes();
+    cmRenderAlteracoes();
+  } catch (e) {
+    console.error(e);
+    toast("erro", "Erro ao aplicar: " + e.message);
+  } finally { mostrarLoading(false); }
+};
+
+window.cmIgnorar = async (id) => {
+  if (!checkPermission("admin")) { toast("erro", "Acesso negado."); return; }
+  mostrarLoading(true);
+  try {
+    const valida = await cmPendenciaAindaValida(id);
+    if (!valida) { await window.carregarComissoes(); cmRenderAlteracoes(); return; }
+    await updateDoc(valida.ref, {
+      status: "ignorada",
+      confirmadoPor: currentUserData?.nome || auth.currentUser?.email || "ADM",
+      confirmadoEm: serverTimestamp(),
+    });
+    await logAction("Comissões", `Ignorou alteração do site em: ${valida.dados.nome}`);
+    toast("ok", "Alteração ignorada.");
+    await window.carregarComissoes();
+    cmRenderAlteracoes();
+  } catch (e) {
+    console.error(e);
+    toast("erro", "Erro ao ignorar: " + e.message);
+  } finally { mostrarLoading(false); }
+};
+
 </script>
