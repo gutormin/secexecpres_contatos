@@ -849,6 +849,32 @@
       .tel-search-row { flex-wrap:wrap; }
       .tel-grid { grid-template-columns:1fr; }
     }
+
+    /* ══ FILTRO AVANÇADO TJGO (cidade / comarca / tipo de vara) ══ */
+    .tjf-wrap{width:100%;display:flex;flex-direction:column;gap:10px}
+    .tjf-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+    .tjf-field{display:flex;flex-direction:column;gap:3px;min-width:0}
+    .tjf-lab{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--g500)}
+    .tjf-sel{padding:8px 10px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:13px;
+      background:#fff;color:var(--g900);max-width:230px;min-width:0}
+    .tjf-chips{display:flex;flex-wrap:wrap;gap:6px}
+    .tjf-chip{font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--g700);
+      border:1.5px solid var(--g200);border-radius:20px;padding:4px 11px;display:inline-flex;gap:6px;align-items:center;
+      transition:all .15s}
+    .tjf-chip .tjf-n{font-size:11px;font-weight:700;opacity:.6;font-variant-numeric:tabular-nums}
+    .tjf-chip:hover{border-color:var(--primary);color:var(--primary)}
+    .tjf-chip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+    .tjf-chip.on .tjf-n{opacity:.8}
+    .tjf-chip.zero{opacity:.45}
+    .tjf-aux{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:12.5px;color:var(--g500)}
+    .tjf-aux label{display:inline-flex;gap:6px;align-items:center;cursor:pointer;font-weight:600}
+    .tjf-bt{font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:var(--primary);
+      border:1.5px solid var(--g200);border-radius:var(--radius-sm);padding:5px 11px}
+    .tjf-bt:hover{border-color:var(--primary)}
+    .tjf-nota{font-size:12px;color:var(--g500)}
+    .tjf-nota b{color:var(--g700)}
+    .tjf-box{background:#fff;border:1px solid var(--g200);border-radius:var(--radius-sm);padding:10px 12px}
+    @media(max-width:640px){.tjf-sel{max-width:100%;width:100%}.tjf-field{width:100%}}
   </style>
 </head>
 <body>
@@ -1318,6 +1344,7 @@
           <button class="tipo-tab btn-filt-tipo" id="tab-end-simples" onclick="filtrarEnderecos('simples')"><i class="fas fa-user"></i> Ofício Simples</button>
           <button class="tipo-tab btn-filt-tipo" id="tab-end-circular" onclick="filtrarEnderecos('circular')"><i class="fas fa-users"></i> Ofício Circular</button>
         </div>
+        <div id="end-filtro-tjgo" style="width:100%;margin-top:12px"></div>
       </div>
     </div>
 
@@ -1361,6 +1388,7 @@
           <div class="fgroup" id="end-tjgo-box" style="margin-bottom:20px;background:#F8FAFC;padding:14px;border-radius:var(--radius-sm);border:1px solid var(--g200);">
             <label style="color:var(--g700)"><i class="fas fa-scale-balanced"></i> Vínculo com a lista de juízes do TJGO <span style="color:var(--g400);font-weight:500;">(Opcional — permite avisar quando o juiz mudar)</span></label>
             <div id="end-tjgo-alerta" class="hidden" style="margin:8px 0 10px;padding:10px 12px;border-radius:8px;background:var(--amber-l);border:1px solid var(--amber);font-size:13px;line-height:1.5;color:var(--g800)"></div>
+            <div id="end-tjgo-filtro" style="margin-top:10px"></div>
             <div class="form-row-2" style="margin-top:8px">
               <div class="fgroup" style="margin:0">
                 <label for="end-tjgo-comarca" style="font-size:12px">Comarca</label>
@@ -3437,8 +3465,12 @@ window.filtrarEnderecos = (tipo) => {
     const textoNormalizado = textoBruto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     
     const matchBusca = !busca || textoNormalizado.includes(busca);
-    return matchTipo && matchBusca;
+    const matchTjgo = !window.tjgoItemCombina || tjgoItemCombina(item);
+    return matchTipo && matchBusca && matchTjgo;
   });
+
+  if (window.tjgoRenderFiltroEnd && !document.querySelector("#end-filtro-tjgo .tjf-wrap")) tjgoRenderFiltroEnd();
+  if (window.tjgoNotaFiltroEnd) tjgoNotaFiltroEnd();
 
   renderizarGridEnderecos();
 };
@@ -4266,26 +4298,305 @@ async function tjgoConcluirAplicacao(endId) {
   } catch (e) { console.warn("Não foi possível marcar a alteração como aplicada:", e); }
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   FILTRO AVANÇADO DA LISTA DO TJGO
+   Classifica o texto livre da vara em matérias e permite filtrar
+   endereçamentos (tela) e o vínculo (formulário) por cidade,
+   comarca e tipo de vara.
+   A competência é cumulativa: uma vara pode ter várias matérias.
+   ══════════════════════════════════════════════════════════════ */
+
+const TJGO_MATERIAS = [
+  { id: "infancia",    nome: "Infância e Juventude",        re: /inf(ancia|\.)\s*(e\s*)?(da\s*)?juv|inf\. e da juv/ },
+  { id: "violencia",   nome: "Violência Doméstica",         re: /violencia domestica|contra a mulher|maria da penha/ },
+  { id: "fazenda_est", nome: "Fazenda Púb. Estadual",       re: /faz(enda|\.)\s*(publ|pub\.)[a-z.]*\s*(estadual|est\.)|fazendas publicas estaduais/ },
+  { id: "fazenda_mun", nome: "Fazenda Púb. Municipal",      re: /faz(enda|\.)\s*(publ|pub\.)[a-z.]*\s*(municipal|mun\.)|fazendas publicas municipais/ },
+  { id: "fazenda",     nome: "Fazenda Pública (geral)",     re: /fazenda[s]? public|faz\. pub/ },
+  { id: "exec_fiscal", nome: "Execução Fiscal",             re: /execucao fiscal/ },
+  { id: "ambiental",   nome: "Ambiental",                   re: /ambiental/ },
+  { id: "registros",   nome: "Registros Públicos",          re: /reg(istros|\.)\s*(publ|pub\.)/ },
+  { id: "civel",       nome: "Cível",                       re: /\bcivel\b|\bciveis\b/ },
+  { id: "familia",     nome: "Família",                     re: /\bfamilia\b/ },
+  { id: "sucessoes",   nome: "Sucessões",                   re: /sucess(oes|ao)/ },
+  { id: "criminal",    nome: "Criminal",                    re: /\bcriminal\b|\bcriminais\b|crimes?\b|penal|penais|juri\b/ },
+  { id: "juri",        nome: "Júri / Crimes contra a vida", re: /tribunal do juri|dolosos contra a vida|pres\.? trib\.? juri/ },
+  { id: "exec_penal",  nome: "Execução Penal",              re: /execu(cao|coes) pena|penas e medidas alternativas/ },
+  { id: "garantias",   nome: "Vara das Garantias",          re: /das garantias/ },
+  { id: "orgcrim",     nome: "Org. Criminosa / Lavagem",    re: /organizacao criminosa|lavagem/ },
+  { id: "hipervuln",   nome: "Vítimas Hipervulneráveis",    re: /hipervulnerav/ },
+  { id: "jec",         nome: "Juizado Especial Cível",      re: /juizado especial civel/ },
+  { id: "jecrim",      nome: "Juizado Especial Criminal",   re: /juizado especial criminal|juizado especial civel e criminal|juizado criminal/ },
+  { id: "jefaz",       nome: "Juizado Esp. da Fazenda",     re: /juizado especial de fazenda|juizado especial da fazenda/ },
+  { id: "turma",       nome: "Turma Recursal",              re: /turma recursal/ },
+  { id: "justica40",   nome: "Núcleo de Justiça 4.0",       re: /justica 4\.?0|nucleo de justica/ },
+  { id: "cumprimento", nome: "Cumprimento de Sentença",     re: /cumprimento de sentenca/ },
+  { id: "arbitragem",  nome: "Arbitragem",                  re: /arbitragem/ },
+  { id: "militar",     nome: "Auditoria Militar",           re: /auditoria militar/ },
+  { id: "dirforo",     nome: "Diretoria do Foro",           re: /diretoria do foro/ },
+  { id: "unica",       nome: "Vara Única / Juízo Único",    re: null }
+];
+const TJGO_MAT_NOME = Object.fromEntries(TJGO_MATERIAS.map(m => [m.id, m.nome]));
+
+const tjgoChave = (v) => String(v || "").normalize("NFD").replace(/[̀-ͯ]/g, "")
+  .toLowerCase().replace(/\s+/g, " ").trim();
+
+/* tira citações legais ("(Res. 221/2023)", "Criada pela Lei...") preservando
+   os parênteses que descrevem competência ("(Família e Sucessões, Cível)") */
+const TJGO_CITACAO = /\((?=[^()]*(?:\bres\b|\bresolu|\blei\b|\bdj\b|\bdecreto|\bart\b|\bprovimento|instalad|criad|alterad|oficializ|nomeclatura|nomenclatura|desmembrad|vacancia|\d{2,}\/\d{2,}))[^()]*\)?/g;
+
+function tjgoLimparVara(texto) {
+  let s = String(texto || "").replace(/ /g, " ");
+  let antes;
+  do { antes = s; s = s.replace(TJGO_CITACAO, " "); } while (s !== antes);
+  s = s.replace(/\b(criad[ao]|instalad[ao])\s+pel[ao]\s+[^,;]*/gi, " ")
+       .replace(/\bres(olu(ç|c)[ãa]o)?\.?\s*n?º?\s*[\d./-]+\s*/gi, " ")
+       .replace(/\blei\s+(estadual\s+)?n?º?\s*[\d./-]+\s*/gi, " ")
+       .replace(/\bdj\.?\s*n?º?\s*[\d./-]+\s*/gi, " ");
+  s = s.replace(/\(([^()]*)\)?/g, (m, dentro) => {
+    const resto = dentro.replace(/[\d.,;:/º°ª\s-]+/g, " ")
+      .replace(/\b(de|e|do|da|n|nº|res|dj|lei)\b/gi, " ").replace(/\s+/g, "");
+    return resto.length >= 3 ? m : " ";
+  });
+  // remove parênteses que ficaram sem par
+  const fora = {}, abertos = [];
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === "(") abertos.push(i);
+    else if (s[i] === ")") { if (abertos.length) abertos.pop(); else fora[i] = 1; }
+  }
+  abertos.forEach(i => { fora[i] = 1; });
+  if (Object.keys(fora).length) s = s.split("").filter((_, i) => !fora[i]).join("");
+  return s.replace(/[\s.;,-]+$/, "").replace(/\s+/g, " ").trim();
+}
+
+/** Matérias de uma vara (texto livre) -> array de ids. */
+function tjgoMaterias(vara) {
+  const limpo = tjgoLimparVara(vara), k = tjgoChave(limpo);
+  if (!k || /^\d+[ao]?$/.test(k.replace(/[ºª°]/g, ""))) return ["unica"];
+  let ids = TJGO_MATERIAS.filter(m => m.re && m.re.test(k)).map(m => m.id);
+  if (/juizado especial civel e criminal/.test(k)) {
+    if (!ids.includes("jec")) ids.push("jec");
+    if (!ids.includes("jecrim")) ids.push("jecrim");
+  }
+  if (ids.includes("fazenda") && (ids.includes("fazenda_est") || ids.includes("fazenda_mun")))
+    ids = ids.filter(x => x !== "fazenda");
+  if (ids.includes("juri") && !ids.includes("criminal")) ids.push("criminal");
+  if (!ids.length) ids = ["unica"];
+  const ordem = TJGO_MATERIAS.map(m => m.id);
+  return ids.sort((a, b) => ordem.indexOf(a) - ordem.indexOf(b));
+}
+
+/* cache: o texto da vara não muda entre varreduras */
+const _tjgoCacheMat = new Map();
+function tjgoMateriasCache(vara) {
+  const k = String(vara || "");
+  if (!_tjgoCacheMat.has(k)) _tjgoCacheMat.set(k, tjgoMaterias(k));
+  return _tjgoCacheMat.get(k);
+}
+
+function tjgoCidades() {
+  return [...new Set((tjgoLista?.linhas || []).map(l => tjgoCurto(l.comarca)).filter(Boolean))]
+    .sort((a, b) => tjgoNorm(a).localeCompare(tjgoNorm(b)));
+}
+
+function tjgoCombinaMaterias(ids, escolhidas, todas) {
+  if (!escolhidas.length) return true;
+  const tem = escolhidas.filter(m => ids.includes(m));
+  return todas ? tem.length === escolhidas.length : tem.length > 0;
+}
+
+/* ---------- estado dos dois filtros ---------- */
+let tjgoFiltroEnd  = { cidade: "", comarca: "", materias: [], todas: false };
+let tjgoFiltroForm = { cidade: "", materias: [] };
+const tjgoFiltroAtivo = (f) => !!(f.cidade || f.comarca || f.materias.length);
+
+/* ---------- desenho dos controles ---------- */
+function tjgoChipsHTML(escopo, contagem, escolhidas) {
+  return TJGO_MATERIAS.filter(m => contagem[m.id]).map(m =>
+    `<button type="button" class="tjf-chip${escolhidas.includes(m.id) ? " on" : ""}${contagem[m.id] ? "" : " zero"}"
+       onclick="tjgoAlternarMateria('${escopo}','${m.id}')" aria-pressed="${escolhidas.includes(m.id)}">
+       ${tjgoEsc(m.nome)}<span class="tjf-n">${contagem[m.id]}</span></button>`).join("");
+}
+
+function tjgoSelectHTML(id, acao, valores, atual, vazio) {
+  return `<select id="${id}" class="tjf-sel" onchange="${acao}">
+    <option value="">${tjgoEsc(vazio)}</option>` +
+    valores.map(v => `<option value="${tjgoEsc(v.valor)}"${v.valor === atual ? " selected" : ""}>` +
+      `${tjgoEsc(v.valor)}${v.total != null ? " (" + v.total + ")" : ""}</option>`).join("") + `</select>`;
+}
+
+/* ───────── 1) filtro na TELA de endereçamentos ───────── */
+
+/** Dados TJGO de um endereçamento vinculado (ou null se não tem vínculo). */
+function tjgoDoEndereco(item) {
+  if (!item || !item.tjgoComarca) return null;
+  return {
+    comarca: item.tjgoComarca,
+    cidade: tjgoCurto(item.tjgoComarca),
+    vara: item.tjgoVara || "",
+    materias: item.tjgoVara === TJGO_DIRETORIA ? ["dirforo"] : tjgoMateriasCache(item.tjgoVara)
+  };
+}
+
+window.tjgoItemCombina = (item) => {
+  const f = tjgoFiltroEnd;
+  if (!tjgoFiltroAtivo(f)) return true;
+  const d = tjgoDoEndereco(item);
+  if (!d) return false;                       // sem vínculo não entra em filtro de vara
+  if (f.cidade && d.cidade !== f.cidade) return false;
+  if (f.comarca && d.comarca !== f.comarca) return false;
+  return tjgoCombinaMaterias(d.materias, f.materias, f.todas);
+};
+
+window.tjgoRenderFiltroEnd = () => {
+  const el = document.getElementById("end-filtro-tjgo");
+  if (!el) return;
+  const vinculados = (todosEnderecos || []).map(tjgoDoEndereco).filter(Boolean);
+  if (!tjgoLista && !vinculados.length) { el.innerHTML = ""; return; }
+
+  const f = tjgoFiltroEnd;
+  const base = vinculados.filter(d => (!f.cidade || d.cidade === f.cidade) && (!f.comarca || d.comarca === f.comarca));
+  const cont = {};
+  base.forEach(d => d.materias.forEach(m => { cont[m] = (cont[m] || 0) + 1; }));
+  f.materias.forEach(m => { if (!cont[m]) cont[m] = 0; });
+
+  const cidades = {}, comarcas = {};
+  vinculados.forEach(d => {
+    cidades[d.cidade] = (cidades[d.cidade] || 0) + 1;
+    comarcas[d.comarca] = (comarcas[d.comarca] || 0) + 1;
+  });
+  const lista = (o) => Object.keys(o).sort((a, b) => tjgoNorm(a).localeCompare(tjgoNorm(b)))
+    .map(k => ({ valor: k, total: o[k] }));
+
+  el.innerHTML = `<div class="tjf-wrap">
+    <div class="tjf-row">
+      <div class="tjf-field"><span class="tjf-lab"><i class="fas fa-city"></i> Cidade</span>
+        ${tjgoSelectHTML("end-filt-cidade", "tjgoMudarFiltroEnd()", lista(cidades), f.cidade, "Todas as cidades")}</div>
+      <div class="tjf-field"><span class="tjf-lab"><i class="fas fa-landmark"></i> Comarca</span>
+        ${tjgoSelectHTML("end-filt-comarca", "tjgoMudarFiltroEnd()", lista(comarcas), f.comarca, "Todas as comarcas")}</div>
+    </div>
+    ${Object.keys(cont).length ? `<div><span class="tjf-lab" style="display:block;margin-bottom:6px">
+      <i class="fas fa-scale-balanced"></i> Tipo de vara</span>
+      <div class="tjf-chips">${tjgoChipsHTML("end", cont, f.materias)}</div></div>` : ""}
+    <div class="tjf-aux">
+      <label><input type="checkbox" ${f.todas ? "checked" : ""} onchange="tjgoMudarTodas('end',this.checked)">
+        exigir <b>todas</b> as marcadas</label>
+      ${tjgoFiltroAtivo(f) ? `<button type="button" class="tjf-bt" onclick="tjgoLimparFiltroEnd()">
+        <i class="fas fa-eraser"></i> Limpar filtro de vara</button>` : ""}
+      <span class="tjf-nota" id="end-filt-nota"></span>
+    </div>
+  </div>`;
+  tjgoNotaFiltroEnd();
+};
+
+window.tjgoNotaFiltroEnd = () => {
+  const el = document.getElementById("end-filt-nota");
+  if (!el) return;
+  if (!tjgoFiltroAtivo(tjgoFiltroEnd)) {
+    const semVinc = (todosEnderecos || []).filter(i => !i.tjgoComarca).length;
+    el.innerHTML = semVinc ? `${semVinc} endereçamento(s) ainda sem vínculo com a lista do TJGO.` : "";
+    return;
+  }
+  const semVinc = (todosEnderecos || []).filter(i => !i.tjgoComarca).length;
+  el.innerHTML = `<b>${(enderecosFiltrados || []).length}</b> resultado(s)` +
+    (semVinc ? ` · ${semVinc} sem vínculo ficaram de fora` : "");
+};
+
+window.tjgoMudarFiltroEnd = () => {
+  tjgoFiltroEnd.cidade = document.getElementById("end-filt-cidade")?.value || "";
+  tjgoFiltroEnd.comarca = document.getElementById("end-filt-comarca")?.value || "";
+  tjgoRenderFiltroEnd();
+  filtrarEnderecos();
+};
+window.tjgoLimparFiltroEnd = () => {
+  tjgoFiltroEnd = { cidade: "", comarca: "", materias: [], todas: false };
+  tjgoRenderFiltroEnd();
+  filtrarEnderecos();
+};
+
+/* ───────── 2) filtro no VÍNCULO do formulário ───────── */
+
+window.tjgoRenderFiltroForm = () => {
+  const el = document.getElementById("end-tjgo-filtro");
+  if (!el) return;
+  if (!tjgoLista) { el.innerHTML = ""; return; }
+  const f = tjgoFiltroForm;
+  const linhas = (tjgoLista.linhas || []).filter(l => !f.cidade || tjgoCurto(l.comarca) === f.cidade);
+  const cont = {};
+  linhas.forEach(l => tjgoMateriasCache(l.vara).forEach(m => { cont[m] = (cont[m] || 0) + 1; }));
+  f.materias.forEach(m => { if (!cont[m]) cont[m] = 0; });
+
+  el.innerHTML = `<div class="tjf-wrap tjf-box">
+    <div class="tjf-row">
+      <div class="tjf-field"><span class="tjf-lab"><i class="fas fa-filter"></i> Filtrar por cidade</span>
+        ${tjgoSelectHTML("end-filt-form-cidade", "tjgoMudarFiltroForm()",
+          tjgoCidades().map(c => ({ valor: c })), f.cidade, "Todas as cidades")}</div>
+      <div class="tjf-field" style="flex:1;justify-content:flex-end">
+        <span class="tjf-nota">${linhas.filter(l => tjgoCombinaMaterias(tjgoMateriasCache(l.vara), f.materias, false)).length} vara(s) disponíveis</span></div>
+    </div>
+    <div><span class="tjf-lab" style="display:block;margin-bottom:6px">Tipo de vara</span>
+      <div class="tjf-chips">${tjgoChipsHTML("form", cont, f.materias)}</div></div>
+    ${tjgoFiltroAtivo({ ...f, comarca: "" }) ? `<div class="tjf-aux">
+      <button type="button" class="tjf-bt" onclick="tjgoLimparFiltroForm()"><i class="fas fa-eraser"></i> Limpar</button>
+      <span class="tjf-nota">O filtro só reduz as opções abaixo; não altera o vínculo já salvo.</span></div>` : ""}
+  </div>`;
+};
+
+window.tjgoMudarFiltroForm = () => {
+  tjgoFiltroForm.cidade = document.getElementById("end-filt-form-cidade")?.value || "";
+  const sc = document.getElementById("end-tjgo-comarca");
+  tjgoPreencherVinculo(sc?.value || "", document.getElementById("end-tjgo-vara")?.value || "");
+};
+window.tjgoLimparFiltroForm = () => {
+  tjgoFiltroForm = { cidade: "", materias: [] };
+  const sc = document.getElementById("end-tjgo-comarca");
+  tjgoPreencherVinculo(sc?.value || "", document.getElementById("end-tjgo-vara")?.value || "");
+};
+
+/* ---------- alternância de chip, para os dois escopos ---------- */
+window.tjgoAlternarMateria = (escopo, id) => {
+  const f = escopo === "end" ? tjgoFiltroEnd : tjgoFiltroForm;
+  const i = f.materias.indexOf(id);
+  if (i < 0) f.materias.push(id); else f.materias.splice(i, 1);
+  if (escopo === "end") { tjgoRenderFiltroEnd(); filtrarEnderecos(); }
+  else tjgoMudarFiltroForm();
+};
+window.tjgoMudarTodas = (escopo, v) => {
+  if (escopo === "end") { tjgoFiltroEnd.todas = v; tjgoRenderFiltroEnd(); filtrarEnderecos(); }
+};
+
+/** A linha do TJGO passa pelo filtro do formulário? */
+function tjgoLinhaPassaFiltroForm(l) {
+  const f = tjgoFiltroForm;
+  if (f.cidade && tjgoCurto(l.comarca) !== f.cidade) return false;
+  return tjgoCombinaMaterias(tjgoMateriasCache(l.vara), f.materias, false);
+}
+
 /* ---------- vínculo Comarca/Vara no formulário ---------- */
 function tjgoComarcas() {
-  return [...new Set((tjgoLista?.linhas || []).map(l => l.comarca).filter(Boolean))]
+  return [...new Set((tjgoLista?.linhas || []).filter(tjgoLinhaPassaFiltroForm)
+    .map(l => l.comarca).filter(Boolean))]
     .sort((a, b) => tjgoNorm(a).localeCompare(tjgoNorm(b)));
 }
 function tjgoVaras(comarca) {
-  return (tjgoLista?.linhas || []).filter(l => l.comarca === comarca).map(l => l.vara);
+  return (tjgoLista?.linhas || [])
+    .filter(l => l.comarca === comarca && tjgoLinhaPassaFiltroForm(l)).map(l => l.vara);
 }
-function tjgoOpcoes(sel, valores, atual, vazio) {
+function tjgoOpcoes(sel, valores, atual, vazio, rotulo) {
   const vals = [...valores];
   if (atual && !vals.includes(atual)) vals.unshift(atual);
+  const texto = (v) => tjgoEsc(rotulo ? rotulo(v) : v);
   sel.innerHTML = `<option value="">${vazio}</option>` + vals.map(v =>
-    `<option value="${tjgoEsc(v)}"${v === atual ? " selected" : ""}>${tjgoEsc(v)}</option>`).join("");
+    `<option value="${tjgoEsc(v)}"${v === atual ? " selected" : ""} title="${tjgoEsc(v)}">${texto(v)}</option>`).join("");
 }
 window.tjgoPreencherVinculo = (comarca, vara) => {
   const sc = document.getElementById("end-tjgo-comarca"), sv = document.getElementById("end-tjgo-vara");
   if (!sc || !sv) return;
   tjgoOpcoes(sc, tjgoComarcas(), comarca, "— sem vínculo —");
-  tjgoOpcoes(sv, comarca ? [TJGO_DIRETORIA, ...tjgoVaras(comarca)] : [], vara, comarca ? "— escolha —" : "—");
+  tjgoOpcoes(sv, comarca ? [TJGO_DIRETORIA, ...tjgoVaras(comarca)] : [], vara, comarca ? "— escolha —" : "—",
+    (v) => v === TJGO_DIRETORIA ? v : (tjgoLimparVara(v) || v));
   document.getElementById("end-tjgo-opcoes").innerHTML = "";
+  if (window.tjgoRenderFiltroForm) tjgoRenderFiltroForm();
   tjgoMostrarAtual();
 };
 window.tjgoAoMudarComarca = () => {
