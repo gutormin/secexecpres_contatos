@@ -1324,6 +1324,7 @@
         </div>
       </div>
       <div style="display:flex;gap:10px;">
+        <button class="btn-sec hidden" id="btn-atualizar-tjgo" onclick="abrirAtualizacaoTjgo()" title="Atualiza os endereçamentos com a última lista de comarcas e juízes do TJGO"><i class="fas fa-rotate"></i> Atualizar</button>
         <button class="btn-sec hidden" id="btn-importar-enderecos" onclick="abrirModalImportarEnderecos()"><i class="fas fa-file-import"></i> Importar em Lote</button>
         <button class="btn-pri hidden" id="btn-novo-endereco" onclick="abrirFormEndereco()"><i class="fas fa-plus"></i> Novo Endereçamento</button>
       </div>
@@ -1830,6 +1831,7 @@ function atualizarInterfacePermissoes() {
   document.getElementById("btn-nav-cad-ext").classList.toggle("hidden", !canCreate);
   document.getElementById("btn-novo-endereco")?.classList.toggle("hidden", !canCreate);
   document.getElementById("btn-importar-enderecos")?.classList.toggle("hidden", !canCreate);
+  document.getElementById("btn-atualizar-tjgo")?.classList.toggle("hidden", !checkPermission("edit"));
   
   // Guard button elements inside screens
   const btnNovoTel = document.querySelector(".btn-pri[onclick='abrirModalTelefone()']");
@@ -4635,6 +4637,175 @@ window.tjgoLocalizarPeloNome = () => {
   box.innerHTML = `<span style="font-size:12px;color:var(--g500)">Encontrado em ${achados.length} lugares — escolha:</span>` + achados.map((a, i) =>
     `<button type="button" class="btn-sec" style="justify-content:flex-start;text-align:left;padding:6px 10px;font-size:12px" onclick="tjgoPreencherVinculo(_tjgoAchados[${i}].comarca,_tjgoAchados[${i}].vara)">
       ${tjgoEsc(tjgoCurto(a.comarca))} · ${tjgoEsc(a.vara)}</button>`).join("");
+};
+
+/* ---------- botão "Atualizar": todos os endereçamentos de uma vez ---------- */
+let tjgoAtuPlano = null; // { trocar:[...], manual:[...], emDia:n, semVinculo:n }
+
+// Trecho do nome em MAIÚSCULAS (2+ palavras), com posição, para trocar no lugar certo
+function tjgoTrechoMaiusculo(txt) {
+  const re = /(?<!\p{L})\p{Lu}[\p{Lu}'’.\-]*(?:\s+\p{Lu}[\p{Lu}'’.\-]*)+(?!\p{L})/gu;
+  let melhor = null, m;
+  while ((m = re.exec(txt))) {
+    if (!melhor || m[0].length > melhor.t.length) melhor = { t: m[0], i: m.index };
+  }
+  return melhor;
+}
+
+// Troca "antigo" por "novo" dentro do texto, ignorando acentos/maiúsculas na busca
+function tjgoTrocarNome(txt, antigo, novo) {
+  if (!txt || !antigo) return null;
+  const pos = tjgoNorm(txt).indexOf(tjgoNorm(antigo));
+  return pos < 0 ? null : txt.slice(0, pos) + novo + txt.slice(pos + antigo.length);
+}
+
+function tjgoPessoaAtual(comarca, vara) {
+  if (vara === TJGO_DIRETORIA) {
+    const temComarca = (tjgoLista?.linhas || []).some(l => l.comarca === comarca);
+    return temComarca ? { achou: true, pessoa: tjgoDiretor(comarca) } : { achou: false, pessoa: "" };
+  }
+  const l = (tjgoLista?.linhas || []).find(x => x.comarca === comarca && x.vara === vara);
+  return l ? { achou: true, pessoa: l.pessoa || "" } : { achou: false, pessoa: "" };
+}
+
+function tjgoPlanejarAtualizacao() {
+  const plano = { trocar: [], manual: [], emDia: 0, semVinculo: 0 };
+  const pend = tjgoPendentes.filter(a => a.pessoaDepois);
+  todosEnderecos.filter(e => e.tipo === "simples").forEach(end => {
+    const nome = end.nome || end.destinatario || "";
+    let comarca = end.tjgoComarca || "", vara = comarca ? (end.tjgoVara || "") : "", novo = "", alt = null, vincular = false;
+
+    if (comarca && vara) {
+      const atual = tjgoPessoaAtual(comarca, vara);
+      if (!atual.achou) { plano.manual.push({ end, motivo: "A vara vinculada não está mais na lista do TJGO (pode ter mudado de nome)." }); return; }
+      if (!atual.pessoa) { plano.manual.push({ end, motivo: "A lista do TJGO não informa juiz para esta vara agora." }); return; }
+      novo = atual.pessoa;
+      alt = pend.find(a => a.comarca === comarca && a.vara === vara) || null;
+    } else {
+      // Sem vínculo: só atualiza se uma alteração detectada citar o nome que está no endereçamento
+      alt = pend.find(a => tjgoAfetados(a).some(x => x.id === end.id)) || null;
+      if (!alt) { plano.semVinculo++; return; }
+      novo = alt.pessoaDepois; comarca = alt.comarca; vara = alt.vara; vincular = true;
+    }
+
+    if (tjgoNorm(nome).includes(tjgoNorm(novo))) { plano.emDia++; return; }
+
+    const novoUp = novo.toLocaleUpperCase("pt-BR");
+    let antigo = "", nomeNovo = null;
+    const antAlt = alt?.pessoaAntes || alt?.nomeAntes || "";
+    if (antAlt && (nomeNovo = tjgoTrocarNome(nome, antAlt, novoUp))) antigo = nome.substr(tjgoNorm(nome).indexOf(tjgoNorm(antAlt)), antAlt.length);
+    else {
+      const tr = tjgoTrechoMaiusculo(nome);
+      if (tr && tr.t.length >= 8) { antigo = tr.t; nomeNovo = nome.slice(0, tr.i) + novoUp + nome.slice(tr.i + tr.t.length); }
+    }
+    if (!nomeNovo) { plano.manual.push({ end, motivo: `Hoje na lista: ${novo}. Não achei o nome antigo no texto para trocar sozinho.`, alt }); return; }
+
+    const vocNovo = tjgoTrocarNome(end.vocativo || "", antigo, novoUp);
+    plano.trocar.push({ end, comarca, vara, antigo, novo: novoUp, nomeNovo, vocNovo, vincular, alt });
+  });
+  return plano;
+}
+
+window.abrirAtualizacaoTjgo = async () => {
+  if (!checkPermission("edit")) return toast("erro", "Sem permissão.");
+  await carregarEnderecos(); // busca de novo os endereçamentos e a última lista do TJGO gravada pelo PC
+  if (!tjgoLista) return toast("aviso", "A lista do TJGO ainda não foi sincronizada pelo PC.");
+  tjgoAtuPlano = tjgoPlanejarAtualizacao();
+  const { trocar, manual, emDia, semVinculo } = tjgoAtuPlano;
+  const vinc = tjgoPlanejar();
+  const nVinc = vinc.auto.length + vinc.duvida.length;
+  const local = (c, v) => `${tjgoEsc(tjgoCurto(c))} · ${tjgoEsc(v === TJGO_DIRETORIA ? v : (tjgoLimparVara(v) || v))}`;
+
+  document.getElementById("modal-tjgo-titulo").innerHTML = `<i class="fas fa-rotate"></i> Atualizar endereçamentos pela lista do TJGO`;
+  document.getElementById("modal-tjgo-corpo").innerHTML = `
+    <div style="font-size:12.5px;color:var(--g500)">Lista do TJGO coletada em ${tjgoData(tjgoLista.ultimaVarredura)} · site atualizado em ${tjgoEsc(tjgoLista.atualizacaoSite || "?")}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--g600)">
+      <span><strong style="color:var(--primary)">${trocar.length}</strong> para atualizar</span>
+      <span><strong style="color:#92400E">${manual.length}</strong> para você conferir</span>
+      <span><strong style="color:var(--green)">${emDia}</strong> já em dia</span>
+      <span><strong>${semVinculo}</strong> sem vínculo com a lista</span>
+    </div>
+    ${nVinc ? `<div style="font-size:12.5px;padding:8px 10px;border-radius:8px;background:var(--g50);border:1px solid var(--g200)">
+      ${nVinc} endereçamento(s) sem vínculo têm correspondência na lista. Vincule-os para que também sejam atualizados.
+      <button class="btn-sec" style="padding:4px 10px;font-size:12px;margin-left:6px" onclick="abrirVinculoAutomatico()"><i class="fas fa-link"></i> Vincular agora</button></div>` : ""}
+    ${trocar.length ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <h4 style="margin:6px 0 0;font-size:14px">Serão atualizados</h4>
+        <label style="font-size:12px;color:var(--g600);cursor:pointer"><input type="checkbox" checked onchange="document.querySelectorAll('.tjgo-atu-chk').forEach(c=>c.checked=this.checked)"> marcar todos</label>
+      </div>
+      ${trocar.map((t, i) => `
+        <label style="display:flex;gap:10px;align-items:flex-start;border:1px solid var(--g200);border-radius:10px;padding:10px 12px;font-size:13px;background:#fff;cursor:pointer">
+          <input type="checkbox" class="tjgo-atu-chk" data-i="${i}" checked style="margin-top:3px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;color:var(--g900)">${local(t.comarca, t.vara)}${t.vincular ? ` <span style="font-size:11px;font-weight:600;color:var(--primary)">(será vinculado)</span>` : ""}</div>
+            <div style="margin-top:4px"><s style="color:var(--red)">${tjgoEsc(t.end.nome || t.end.destinatario)}</s></div>
+            <div><strong style="color:var(--green)">${tjgoEsc(t.nomeNovo)}</strong></div>
+            <div style="font-size:12px;color:var(--g500);margin-top:2px">${tjgoEsc(t.end.tratamento || "")} · ${tjgoEsc(t.end.cargo || "")}</div>
+          </div>
+        </label>`).join("")}
+      <div style="font-size:12px;color:var(--g500)"><i class="fas fa-circle-info"></i> Só o nome é trocado. Se o novo juiz for de outro gênero, ajuste depois o <strong>tratamento</strong> (o Senhor / a Senhora) e o <strong>vocativo</strong>.</div>` :
+      `<div class="empty-state" style="padding:16px"><i class="fas fa-circle-check"></i><h3>Nada para atualizar automaticamente</h3></div>`}
+    ${manual.length ? `<h4 style="margin:6px 0 0;font-size:14px">Para você conferir</h4>
+      ${manual.map(m => `
+        <div style="border:1px solid var(--amber);background:var(--amber-l);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center">
+          <div style="flex:1;min-width:200px"><strong>${tjgoEsc(m.end.nome || m.end.destinatario)}</strong>
+            ${m.end.tjgoComarca ? `<div style="font-size:12px;color:var(--g600)">${local(m.end.tjgoComarca, m.end.tjgoVara)}</div>` : ""}
+            <div style="font-size:12px;color:#92400E">${tjgoEsc(m.motivo)}</div></div>
+          <button class="btn-sec" style="padding:5px 10px;font-size:12px" onclick="${m.alt ? `tjgoAplicar('${m.alt.id}','${m.end.id}')` : `fecharModal('modal-tjgo');abrirFormEndereco('${m.end.id}')`}"><i class="fas fa-pen"></i> Abrir</button>
+        </div>`).join("")}` : ""}`;
+  document.getElementById("modal-tjgo-rodape").innerHTML = `
+    <button class="btn-sec" onclick="fecharModal('modal-tjgo')">Cancelar</button>
+    <button class="btn-pri" onclick="confirmarAtualizacaoTjgo()" ${trocar.length ? "" : "disabled"}><i class="fas fa-rotate"></i> Atualizar selecionados</button>`;
+  abrirModal("modal-tjgo");
+};
+
+window.confirmarAtualizacaoTjgo = async () => {
+  if (!tjgoAtuPlano || !checkPermission("edit")) return;
+  const escolhidos = [...document.querySelectorAll(".tjgo-atu-chk")].filter(c => c.checked).map(c => tjgoAtuPlano.trocar[+c.dataset.i]);
+  if (!escolhidos.length) return toast("aviso", "Nenhum endereçamento marcado.");
+  mostrarLoading(true);
+  try {
+    for (let i = 0; i < escolhidos.length; i += 400) {
+      const lote = writeBatch(db);
+      escolhidos.slice(i, i + 400).forEach(t => {
+        const dados = { nome: t.nomeNovo, destinatario: t.nomeNovo, atualizadoEm: serverTimestamp(),
+          tjgoNomeAnterior: t.end.nome || t.end.destinatario || "", tjgoAtualizadoEm: serverTimestamp() };
+        if (t.vocNovo) dados.vocativo = t.vocNovo;
+        if (t.vincular) Object.assign(dados, { tjgoComarca: t.comarca, tjgoVara: t.vara, tjgoSemVinculo: false });
+        lote.update(doc(db, "enderecos", t.end.id), dados);
+      });
+      await lote.commit();
+    }
+    escolhidos.forEach(t => {
+      const e = todosEnderecos.find(y => y.id === t.end.id);
+      if (!e) return;
+      e.nome = e.destinatario = t.nomeNovo;
+      if (t.vocNovo) e.vocativo = t.vocNovo;
+      if (t.vincular) { e.tjgoComarca = t.comarca; e.tjgoVara = t.vara; e.tjgoSemVinculo = false; }
+    });
+
+    // Alterações pendentes que ficaram resolvidas (todos os afetados já têm o nome novo)
+    const tocados = new Set(escolhidos.map(t => t.end.id));
+    const resolvidas = tjgoPendentes.filter(a => a.pessoaDepois && escolhidos.some(t => t.alt?.id === a.id || (t.comarca === a.comarca && t.vara === a.vara)))
+      .filter(a => tjgoAfetados(a).every(e => tjgoNorm(e.nome || e.destinatario).includes(tjgoNorm(a.pessoaDepois))));
+    if (resolvidas.length) {
+      const lote = writeBatch(db);
+      resolvidas.forEach(a => lote.update(doc(db, "tjgo_alteracoes", a.id), {
+        status: "aplicada", resolvidoEm: serverTimestamp(), resolvidoPor: auth.currentUser?.email || "",
+        enderecoId: (tjgoAfetados(a).find(e => tocados.has(e.id)) || {}).id || "" }));
+      await lote.commit();
+      const ids = new Set(resolvidas.map(a => a.id));
+      tjgoPendentes = tjgoPendentes.filter(a => !ids.has(a.id));
+    }
+
+    await logAction("TJGO - atualização em lote",
+      `${escolhidos.length} endereçamento(s): ` + escolhidos.map(t => `${t.antigo || "?"} → ${t.novo}`).join("; "));
+    fecharModal("modal-tjgo");
+    tjgoRenderAviso(); filtrarEnderecos(filtroTipoEndereco);
+    toast("ok", `${escolhidos.length} endereçamento(s) atualizado(s)` + (resolvidas.length ? ` · ${resolvidas.length} alteração(ões) encerrada(s)` : "") + ".");
+  } catch (e) {
+    console.error(e); toast("erro", "Erro ao atualizar os endereçamentos (verifique as regras do Firestore).");
+  } finally { mostrarLoading(false); }
 };
 
 /* ---------- vínculo automático em lote ---------- */
